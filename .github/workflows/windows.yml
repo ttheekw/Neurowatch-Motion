@@ -1,0 +1,120 @@
+name: Windows build and installer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        description: Release version; defaults to Cargo.toml for CI
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  package-windows:
+    name: Windows x86_64
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: Neurowatch-Motion
+      # The Visual Studio developer environment for x64, as NeuroWatch's
+      # release workflow sets it up: only the variables VsDevCmd changes.
+      - name: Set up MSVC (x64)
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Visual Studio with the x64 C++ tools was not found' }
+          $devcmd = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          $after = cmd /c "`"$devcmd`" -no_logo -arch=amd64 -host_arch=amd64 && set"
+          if ($LASTEXITCODE -ne 0) { throw "VsDevCmd failed: $LASTEXITCODE" }
+          foreach ($line in $after) {
+            if ($line -notmatch '^([^=]+)=(.*)$') { continue }
+            $name, $value = $Matches[1], $Matches[2]
+            if ($name -like 'GITHUB_*' -or $name -like 'RUNNER_*') { continue }
+            if ([Environment]::GetEnvironmentVariable($name) -ne $value) {
+              "$name=$value" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            }
+          }
+          where.exe cl link dumpbin
+      # GStreamer 1.28 ships one Inno Setup installer per architecture (no MSIs):
+      # /TYPE=devel adds the headers and pkg-config files; /DIR is the
+      # msvc_x86_64 root itself.
+      - name: Install GStreamer (MSVC)
+        shell: pwsh
+        run: |
+          $ver = "1.28.8"
+          $installer = "gstreamer-1.0-msvc-x86_64-$ver.exe"
+          Invoke-WebRequest "https://gstreamer.freedesktop.org/data/pkg/windows/$ver/msvc/$installer" -OutFile $installer
+          $hash = 'e4c41ee6ee9c6c32a45d198463ec08d79bac3bd5fa58adc93d13fe4a08abc9d9'
+          if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $hash) { throw "Checksum mismatch: $installer" }
+          $gstRoot = 'C:\gstreamer\1.0\msvc_x86_64'
+          $log = Join-Path $env:RUNNER_TEMP 'gstreamer-install.log'
+          $p = Start-Process ".\$installer" -Wait -PassThru -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/TYPE=devel', "/DIR=$gstRoot", "/LOG=$log")
+          if ($p.ExitCode -ne 0) {
+            if (Test-Path $log) { Get-Content $log -Tail 40 }
+            throw "$installer failed: $($p.ExitCode)"
+          }
+          foreach ($file in @('bin\gst-launch-1.0.exe', 'bin\gstreamer-1.0-0.dll', 'lib\pkgconfig\gstreamer-1.0.pc',
+              'include\gstreamer-1.0\gst\gst.h', 'lib\gstreamer-1.0\gstlibav.dll')) {
+            if (-not (Test-Path (Join-Path $gstRoot $file))) { throw "GStreamer install lacks $file" }
+          }
+          Write-Host "GStreamer: $gstRoot"
+          echo "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gstRoot" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$gstRoot\lib\pkgconfig" >> $env:GITHUB_ENV
+          echo "$gstRoot\bin" >> $env:GITHUB_PATH
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build installer and portable zip
+        shell: pwsh
+        working-directory: Neurowatch-Motion
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          if (-not $env:RELEASE_VERSION) {
+            $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.*)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+            $env:RELEASE_VERSION = "v$version"
+          }
+          ./scripts/package_windows.ps1 -Version "$env:RELEASE_VERSION" -OutDir dist/release
+      # Unzipped elsewhere, without GStreamer on PATH: serves with access codes.
+      - name: Check the unzipped program serves
+        shell: pwsh
+        working-directory: Neurowatch-Motion
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'portable'
+          Expand-Archive (Get-Item dist/release/nw-motion-*-windows-x86_64.zip).FullName $dir
+          $exe = Join-Path $dir 'nw-motion\bin\nw-motion.exe'
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          & $exe --check
+          if ($LASTEXITCODE -ne 0) { throw 'nw-motion --check failed' }
+          $codes = Join-Path $env:RUNNER_TEMP 'codes.json'
+          & $exe access-codes add $codes smoke --max-connections 1
+          if ($LASTEXITCODE -ne 0) { throw 'access-codes add failed' }
+          $log = Join-Path $env:RUNNER_TEMP 'daemon.log'
+          $daemon = Start-Process $exe -PassThru -NoNewWindow -RedirectStandardOutput $log `
+            -ArgumentList @('--listen', 'tcp:127.0.0.1:7699', '--identity', (Join-Path $env:RUNNER_TEMP 'identity.key'), '--access-codes', $codes)
+          $listening = $false
+          foreach ($i in 1..50) {
+            if ((Test-Path $log) -and (Select-String -Path $log -Pattern 'Listening for NeuroWatch' -Quiet)) { $listening = $true; break }
+            if ($daemon.HasExited) { break }
+            Start-Sleep -Milliseconds 200
+          }
+          if (-not $daemon.HasExited) { Stop-Process -Id $daemon.Id -Force }
+          if (-not $listening) { Get-Content $log -ErrorAction SilentlyContinue; throw 'nw-motion did not start listening' }
+      - name: Check automatic local startup, upgrade and uninstall
+        shell: pwsh
+        working-directory: Neurowatch-Motion
+        run: ./scripts/smoke_windows_installer.ps1 -Installer (Get-Item dist/release/*-setup.exe).FullName
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-windows-x86_64
+          path: Neurowatch-Motion/dist/release/*
+          if-no-files-found: error

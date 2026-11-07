@@ -53,6 +53,12 @@ jobs:
         run: cargo run --locked --quiet -- --check
       - name: Packaging scripts
         run: |
-          bash -n scripts/package_linux.sh scripts/smoke_linux_package.sh
+          bash -n scripts/package_linux.sh scripts/smoke_linux_package.sh scripts/packaging/session-service.sh
+          sh -n scripts/packaging/session-service.sh
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
+          rustfmt --check scripts/packaging/windows-launcher.rs
+          sed "s|/opt/nw-motion/bin/nw-motion|$PWD/target/release/nw-motion|" \
+            scripts/packaging/nw-motion.service > "$RUNNER_TEMP/nw-motion.service"
+          systemd-analyze --user verify "$RUNNER_TEMP/nw-motion.service"
           scripts/package_linux.sh --version "v$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -n 1)" \
             --arch x86_64 --format portable,deb,rpm,arch --dry-run

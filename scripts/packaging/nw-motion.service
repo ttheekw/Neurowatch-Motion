@@ -1,0 +1,16 @@
+[Unit]
+Description=NeuroWatch local motion detection daemon
+ConditionUser=!@system
+
+[Service]
+Type=simple
+ExecStart=/opt/nw-motion/bin/nw-motion
+Environment=XDG_RUNTIME_DIR=%t
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+UMask=0077
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

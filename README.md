@@ -8,10 +8,10 @@ sends it the cameras' compressed H.264/H.265 video; it decodes and analyses that
 answers with motion events and drawings (the boxes on the live wall). The recorder never decodes
 video for it. ONVIF camera events stay in NeuroWatch.
 
-NeuroWatch's own packages already include this plugin and start it for you. Download it from here
-to run motion detection on **another computer** (a server with spare CPU or a GPU), to limit who
-may use it with [access codes](#access-codes), or to get a newer version before the next
-NeuroWatch release.
+NeuroWatch's own packages already include this plugin and start it automatically. For normal
+local motion detection, install and open NeuroWatch: there is no daemon command or socket to
+configure. The standalone installers here also start automatically in **local mode**. Use them
+for a separately installed version; remote hosting and [access codes](#access-codes) are optional.
 
 ## Download
 
@@ -21,14 +21,15 @@ until then, [build from source](#run-from-source).
 
 | System | Download |
 |---|---|
-| Windows 10/11 (64-bit) | [nw-motion-windows-x86_64.zip](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion-windows-x86_64.zip) |
+| Windows 10/11 (64-bit), automatic startup | [nw-motion-windows-x86_64-setup.exe](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion-windows-x86_64-setup.exe) |
+| Windows 10/11 (64-bit), portable/manual | [nw-motion-windows-x86_64.zip](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion-windows-x86_64.zip) |
 | Ubuntu 22.04+, Debian 12+ (64-bit PC) | [nw-motion_amd64.deb](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion_amd64.deb) |
 | Ubuntu 22.04+, Debian 12+ (ARM 64-bit) | [nw-motion_arm64.deb](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion_arm64.deb) |
 | Fedora and other RPM systems (64-bit PC) | [nw-motion.x86_64.rpm](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion.x86_64.rpm) |
 | Fedora and other RPM systems (ARM 64-bit) | [nw-motion.aarch64.rpm](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion.aarch64.rpm) |
 | Arch Linux | [nw-motion-x86_64.pkg.tar.zst](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion-x86_64.pkg.tar.zst) |
-| Any other Linux (64-bit PC), no install | [nw-motion-linux-x86_64.tar.gz](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion-linux-x86_64.tar.gz) |
-| Any other Linux (ARM 64-bit), no install | [nw-motion-linux-arm64.tar.gz](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion-linux-arm64.tar.gz) |
+| Any other Linux (64-bit PC), portable/manual | [nw-motion-linux-x86_64.tar.gz](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion-linux-x86_64.tar.gz) |
+| Any other Linux (ARM 64-bit), portable/manual | [nw-motion-linux-arm64.tar.gz](https://github.com/ttheekw/Neurowatch-Motion/releases/latest/download/nw-motion-linux-arm64.tar.gz) |
 
 Older versions, release notes and `SHA256SUMS`: [all releases](https://github.com/ttheekw/Neurowatch-Motion/releases).
 Linux packages target glibc 2.35 or newer and require the host's GLib and standard runtime
@@ -42,33 +43,51 @@ tried on a Pi.
 sudo apt install ./nw-motion_amd64.deb          # Ubuntu, Debian
 sudo dnf install ./nw-motion.x86_64.rpm         # Fedora
 sudo pacman -U nw-motion-x86_64.pkg.tar.zst     # Arch Linux
-tar -xzf nw-motion-linux-x86_64.tar.gz          # portable: run ./nw-motion/nw-motion
 sha256sum -c SHA256SUMS --ignore-missing        # optional: check the download
 ```
 
-Packages install to `/opt/nw-motion` with `nw-motion` on the PATH. On Windows, unzip anywhere and
-run `nw-motion\bin\nw-motion.exe` from a terminal. `nw-motion --check` confirms that every
-decoder and element the analysis needs is present.
+**Linux packages:** install to `/opt/nw-motion`, put `nw-motion` on the PATH, and install a
+systemd user service. It starts in existing user sessions at installation and at subsequent
+sign-ins, and restarts if it crashes. It runs as your account, using the default private local
+socket that NeuroWatch's local discovery scans. No `--listen` command or `systemctl enable`
+step is required. A systemd user session is required for automatic startup.
 
-### Connect it to NeuroWatch
+**Windows installer:** run the setup executable. It installs for your account, starts the
+daemon without a console window, and adds a sign-in shortcut. The default local named pipe
+is available to NeuroWatch's local discovery. Uninstalling removes the shortcut and stops
+that installed copy; upgrades preserve its identity.
 
-**On another computer** (open UDP port 7690, or TCP for `tls:`):
+**Portable downloads:** extract the tarball or ZIP and run `nw-motion/nw-motion` on Linux or
+`nw-motion\bin\nw-motion.exe` on Windows. These are the manual option and do not install startup
+entries. `nw-motion --check` checks the bundled decoders.
+
+### Local mode (default)
+
+NeuroWatch's included plugin is started and approved by the main app automatically. The
+standalone daemon listens locally by default and is detected in **Plugins → Add Plugin → Local**;
+no address needs entering. Approve a separately installed plugin and choose its cameras there.
+Local discovery does not bypass the app's approval or camera-binding controls. It can coexist
+with the bundled daemon, which has its own socket. No network port is opened by the installers.
+
+On Linux, `systemctl --user status nw-motion` and `journalctl --user -u nw-motion` show the
+standalone service's status and logs. To opt out of automatic startup, use
+`systemctl --user mask --now nw-motion.service`; `systemctl --user unmask nw-motion.service`
+followed by `systemctl --user start nw-motion.service` restores it. On Windows, disable
+**NeuroWatch Motion** in Startup Apps to opt out.
+
+### Remote mode (optional)
+
+On the remote computer, run a separate daemon with an explicit network listener (open UDP
+port 7690, or TCP for `tls:`), and give it its own persistent identity:
 
 ```sh
-nw-motion --listen quic:0.0.0.0:7690 --identity ~/.local/state/nw-motion/identity.key
+nw-motion --listen quic:0.0.0.0:7690 --identity ~/.local/state/nw-motion/remote.key
 ```
 
 In NeuroWatch open **Plugins → Add Plugin → URL**, enter `quic://that-computer:7690`, check that
 the fingerprint shown matches the one the daemon logs, and approve it. Then bind cameras on the
 plugin's page. Keep the identity file: a new key needs approving again. `tls:` works where UDP is
 blocked.
-
-**On the same computer**, the included copy already runs. To run this one beside it, give it its
-own socket in NeuroWatch's plugin folder and add it under **Plugins → Add Plugin → Local**:
-
-```sh
-nw-motion --listen unix:$XDG_RUNTIME_DIR/neurowatch/plugins/nw-motion-2.sock
-```
 
 ## Run from source
 
@@ -83,7 +102,8 @@ sudo apt-get install -y build-essential pkg-config libgstreamer1.0-dev \
     gstreamer1.0-plugins-ugly gstreamer1.0-libav
 ```
 
-On Windows, use an MSVC developer shell and GStreamer's MSVC runtime and development
+Source builds run in the foreground unless you arrange startup yourself; the native installers
+provide automatic startup. On Windows, use an MSVC developer shell and GStreamer's MSVC runtime and development
 installation; set `GSTREAMER_1_0_ROOT_MSVC_X86_64`, add its `bin` directory to `PATH`, and
 set `PKG_CONFIG_PATH` to its `lib/pkgconfig` directory.
 
@@ -201,6 +221,7 @@ cargo fmt --all -- --check
 env -u GIO_MODULE_DIR cargo test --workspace --locked
 cargo clippy --all-targets --locked -- -D warnings
 python3 -m unittest discover -s tools/motion-eval -v
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 Tests include real x264 moving-ball video over the daemon protocol, settings, detector, event
@@ -229,7 +250,7 @@ evaluation tool does not change the production detector or its build dependencie
 Pushing `main` runs CI. Release packages are built by a version tag or a manual Release
 workflow run; a normal branch push does not publish a release.
 
-The [Release workflow](.github/workflows/release.yml) builds the Windows zip and the Linux
+The [Release workflow](.github/workflows/release.yml) builds the Windows installer/ZIP and Linux
 packages (x86_64 and arm64), installs each one in clean Ubuntu, Debian, Fedora and Arch
 containers, runs `--check`, serves with an access code, and only then publishes the GitHub
 Release with `SHA256SUMS` and the version-free names the download table links to. A tag with
@@ -237,7 +258,13 @@ a suffix (`v0.3.0-rc.1`) is published as a pre-release. **Run workflow** on the 
 workflow builds test packages without publishing. The pinned NeuroWatch revision is public;
 no cross-repository token is required.
 
+The [Windows workflow](.github/workflows/windows.yml) also runs on pushes and pull requests. It
+checks installer startup at the default local pipe, the sign-in shortcut, identity preservation
+on upgrade, and shutdown/shortcut removal on uninstall. Linux native packages include the
+automatically enabled user service; package smoke tests also check the default local socket.
+
 Locally: `scripts/package_linux.sh --version v0.2.0 --arch x86_64 --format portable,deb`
 (builds NeuroWatch's GStreamer once into `build/gstreamer-sdk`; use a sibling checkout at the
 commit in `neurowatch.ref`, or set `NEUROWATCH_DIR`), and on Windows, from an MSVC
-developer shell with GStreamer's MSVC packages, `scripts/package_windows.ps1 -Version v0.2.0`.
+developer shell with GStreamer's MSVC packages and Inno Setup 6,
+`scripts/package_windows.ps1 -Version v0.2.0` (use `-InnoSetupCompiler` for a custom compiler path).

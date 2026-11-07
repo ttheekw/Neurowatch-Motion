@@ -28,8 +28,35 @@ esac
 nw-motion --version
 # Every element the analysis uses, from the bundled GStreamer only.
 nw-motion --check
+test -f /usr/lib/systemd/user/nw-motion.service
+test "$(readlink /usr/lib/systemd/user/default.target.wants/nw-motion.service)" = ../nw-motion.service
 
 work="$(mktemp -d)"
+daemon=""
+cleanup() {
+    if [[ -n "$daemon" ]]; then
+        kill "$daemon" 2>/dev/null || true
+        wait "$daemon" 2>/dev/null || true
+    fi
+    rm -rf "$work"
+}
+trap cleanup EXIT
+# The automatic service runs without transport arguments, in the user's session.
+XDG_RUNTIME_DIR="$work/runtime" XDG_STATE_HOME="$work/state" nw-motion > "$work/local.log" 2>&1 &
+daemon=$!
+for _ in $(seq 1 50); do
+    [[ -S "$work/runtime/neurowatch/plugins/nw-motion.sock" ]] && break
+    kill -0 "$daemon" 2>/dev/null || break
+    sleep 0.2
+done
+if [[ ! -S "$work/runtime/neurowatch/plugins/nw-motion.sock" ]]; then
+    cat "$work/local.log" >&2
+    exit 1
+fi
+[[ "$(stat -c %a "$work/runtime/neurowatch/plugins/nw-motion.sock")" == 600 ]]
+kill "$daemon"
+wait "$daemon" 2>/dev/null || true
+daemon=""
 nw-motion access-codes add "$work/codes.json" smoke --max-connections 1 >/dev/null
 nw-motion access-codes list "$work/codes.json" | grep -q '^smoke'
 grep -q '"hash"' "$work/codes.json"
@@ -48,13 +75,15 @@ if ! grep -q 'Listening for NeuroWatch' "$work/daemon.log"; then
 fi
 kill "$daemon"
 wait "$daemon" 2>/dev/null || true
+daemon=""
 
 case "$FORMAT" in
     deb) apt-get remove -y nw-motion ;;
     rpm) dnf remove -y nw-motion ;;
     arch) pacman -R --noconfirm nw-motion ;;
 esac
-if [[ -e /opt/nw-motion || -e /usr/bin/nw-motion ]]; then
+if [[ -e /opt/nw-motion || -e /usr/bin/nw-motion || -e /usr/lib/systemd/user/nw-motion.service \
+    || -L /usr/lib/systemd/user/default.target.wants/nw-motion.service ]]; then
     echo 'files left behind after removal' >&2
     exit 1
 fi
