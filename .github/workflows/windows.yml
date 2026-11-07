@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+
 jobs:
   package-windows:
     name: Windows x86_64
@@ -55,7 +59,15 @@ jobs:
           try {
             $ver = "1.28.8"
             $installer = "gstreamer-1.0-msvc-x86_64-$ver.exe"
-            Invoke-WebRequest "https://gstreamer.freedesktop.org/data/pkg/windows/$ver/msvc/$installer" -OutFile $installer -MaximumRetryCount 3 -RetryIntervalSec 5
+            $url = "https://gstreamer.freedesktop.org/data/pkg/windows/$ver/msvc/$installer"
+            foreach ($attempt in 1..4) {
+              Write-Host "Downloading GStreamer (attempt $attempt, resuming any partial file)"
+              & curl.exe --http1.1 --fail --location --silent --show-error --connect-timeout 30 `
+                --max-time 900 --continue-at - --output $installer $url
+              if ($LASTEXITCODE -eq 0) { break }
+              if ($attempt -eq 4) { throw "GStreamer download failed after $attempt attempts (curl $LASTEXITCODE)" }
+              Start-Sleep -Seconds 5
+            }
             $hash = 'e4c41ee6ee9c6c32a45d198463ec08d79bac3bd5fa58adc93d13fe4a08abc9d9'
             if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $hash) { throw "Checksum mismatch: $installer" }
             $gstRoot = 'C:\gstreamer\1.0\msvc_x86_64'
@@ -90,11 +102,17 @@ jobs:
         env:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
-          if (-not $env:RELEASE_VERSION) {
-            $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.*)"' | Select-Object -First 1).Matches[0].Groups[1].Value
-            $env:RELEASE_VERSION = "v$version"
+          try {
+            if (-not $env:RELEASE_VERSION) {
+              $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.*)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+              $env:RELEASE_VERSION = "v$version"
+            }
+            ./scripts/package_windows.ps1 -Version "$env:RELEASE_VERSION" -OutDir dist/release
+          } catch {
+            $message = $_.Exception.Message.Replace("`r", '').Replace("`n", '%0A')
+            Write-Host "::error title=Windows packaging::$message"
+            throw
           }
-          ./scripts/package_windows.ps1 -Version "$env:RELEASE_VERSION" -OutDir dist/release
       # Unzipped elsewhere, without GStreamer on PATH: serves with access codes.
       - name: Check the unzipped program serves
         shell: pwsh
@@ -123,7 +141,14 @@ jobs:
       - name: Check automatic local startup, upgrade and uninstall
         shell: pwsh
         working-directory: Neurowatch-Motion
-        run: ./scripts/smoke_windows_installer.ps1 -Installer (Get-Item dist/release/*-setup.exe).FullName
+        run: |
+          try {
+            ./scripts/smoke_windows_installer.ps1 -Installer (Get-Item dist/release/*-setup.exe).FullName
+          } catch {
+            $message = $_.Exception.Message.Replace("`r", '').Replace("`n", '%0A')
+            Write-Host "::error title=Windows installer test::$message"
+            throw
+          }
       - uses: actions/upload-artifact@v7
         with:
           name: release-windows-x86_64
