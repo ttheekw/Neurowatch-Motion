@@ -1,0 +1,312 @@
+name: Release
+
+# A v* tag (or a published GitHub Release) builds every package, installs and
+# checks each one, then publishes them. Manual runs only build artifacts.
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Test build version, for example v0.2.0-rc.1 (no publishing)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      neurowatch-ref: ${{ steps.neurowatch.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          tag="${INPUT_VERSION:-${RELEASE_TAG:-$GITHUB_REF_NAME}}"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]] || {
+            echo 'Expected vMAJOR.MINOR.PATCH, optionally followed by -rc.1'; exit 1;
+          }
+          cargo_version="$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -n 1)"
+          base="${tag#v}"
+          [[ "${base%%-*}" == "$cargo_version" ]] || {
+            echo "::error::Tag $tag does not match Cargo.toml version $cargo_version"; exit 1;
+          }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      # The pinned NeuroWatch revision supplying the Linux GStreamer build.
+      # Analytics library sources are included in this repository.
+      - id: neurowatch
+        run: echo "ref=$(tr -d '[:space:]' < neurowatch.ref)" >> "$GITHUB_OUTPUT"
+
+  # Linux packages carry NeuroWatch's own GStreamer and LGPL FFmpeg build
+  # (only the plugins the analysis uses). Built on Ubuntu 22.04 for both
+  # architectures: glibc 2.35, so Ubuntu 22.04+, Debian 12+ and Raspberry Pi
+  # OS (bookworm, 64-bit) run them.
+  package-linux:
+    name: Linux ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    needs: version
+    timeout-minutes: 90
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-22.04
+            formats: portable,deb,rpm,arch
+          # No Arch package: Arch Linux is x86_64 only.
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+            formats: portable,deb,rpm
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: Neurowatch-Motion
+      - uses: actions/checkout@v7
+        with:
+          repository: ttheekw/Neurowatch
+          ref: ${{ needs.version.outputs.neurowatch-ref }}
+          path: Neurowatch
+      # What NeuroWatch's GStreamer build needs (its release workflow's list,
+      # without the desktop UI's libraries), and the package tools.
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config nasm flex bison curl python3-venv \
+            libglib2.0-dev liborc-0.4-dev libopus-dev libpulse-dev libasound2-dev \
+            libva-dev libdrm-dev libgudev-1.0-dev libjpeg-dev librtmp-dev \
+            libx11-dev libx11-xcb-dev libxext-dev libxv-dev libgl-dev libegl-dev libgles-dev \
+            libsoup-3.0-0 glib-networking \
+            rpm libarchive-tools zstd dpkg-dev binutils
+      - name: Restore the GStreamer build
+        uses: actions/cache@v5
+        with:
+          path: Neurowatch-Motion/build/gstreamer-sdk
+          key: gstreamer-sdk-${{ matrix.runner }}-${{ hashFiles('Neurowatch/scripts/build_release_gstreamer.sh', 'Neurowatch/scripts/packaging/media-sources.sha256') }}
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build packages
+        working-directory: Neurowatch-Motion
+        env:
+          NEUROWATCH_DIR: ${{ github.workspace }}/Neurowatch
+          RELEASE_VERSION: ${{ needs.version.outputs.tag }}
+        run: |
+          scripts/package_linux.sh \
+            --version "$RELEASE_VERSION" \
+            --arch "${{ matrix.arch }}" \
+            --format "${{ matrix.formats }}" \
+            --out-dir dist/release
+      - name: Check the portable bundle
+        working-directory: Neurowatch-Motion
+        run: |
+          mkdir -p "$RUNNER_TEMP/portable"
+          tar -xzf dist/release/nw-motion-*-linux-*.tar.gz -C "$RUNNER_TEMP/portable"
+          env -u GST_PLUGIN_PATH -u GST_PLUGIN_SYSTEM_PATH \
+            "$RUNNER_TEMP/portable/nw-motion/nw-motion" --check
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-${{ matrix.arch }}
+          path: Neurowatch-Motion/dist/release/*
+          if-no-files-found: error
+
+  package-windows:
+    name: Windows x86_64
+    runs-on: windows-2022
+    needs: version
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: Neurowatch-Motion
+      # The Visual Studio developer environment for x64, as NeuroWatch's
+      # release workflow sets it up: only the variables VsDevCmd changes.
+      - name: Set up MSVC (x64)
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Visual Studio with the x64 C++ tools was not found' }
+          $devcmd = Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
+          $after = cmd /c "`"$devcmd`" -no_logo -arch=amd64 -host_arch=amd64 && set"
+          if ($LASTEXITCODE -ne 0) { throw "VsDevCmd failed: $LASTEXITCODE" }
+          foreach ($line in $after) {
+            if ($line -notmatch '^([^=]+)=(.*)$') { continue }
+            $name, $value = $Matches[1], $Matches[2]
+            if ($name -like 'GITHUB_*' -or $name -like 'RUNNER_*') { continue }
+            if ([Environment]::GetEnvironmentVariable($name) -ne $value) {
+              "$name=$value" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            }
+          }
+          where.exe cl link dumpbin
+      # GStreamer 1.28 ships one Inno Setup installer per architecture (no MSIs):
+      # /TYPE=devel adds the headers and pkg-config files; /DIR is the
+      # msvc_x86_64 root itself.
+      - name: Install GStreamer (MSVC)
+        shell: pwsh
+        run: |
+          $ver = "1.28.8"
+          $installer = "gstreamer-1.0-msvc-x86_64-$ver.exe"
+          Invoke-WebRequest "https://gstreamer.freedesktop.org/data/pkg/windows/$ver/msvc/$installer" -OutFile $installer
+          $hash = 'e4c41ee6ee9c6c32a45d198463ec08d79bac3bd5fa58adc93d13fe4a08abc9d9'
+          if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $hash) { throw "Checksum mismatch: $installer" }
+          $gstRoot = 'C:\gstreamer\1.0\msvc_x86_64'
+          $log = Join-Path $env:RUNNER_TEMP 'gstreamer-install.log'
+          $p = Start-Process ".\$installer" -Wait -PassThru -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/TYPE=devel', "/DIR=$gstRoot", "/LOG=$log")
+          if ($p.ExitCode -ne 0) {
+            if (Test-Path $log) { Get-Content $log -Tail 40 }
+            throw "$installer failed: $($p.ExitCode)"
+          }
+          foreach ($file in @('bin\gst-launch-1.0.exe', 'bin\gstreamer-1.0-0.dll', 'lib\pkgconfig\gstreamer-1.0.pc',
+              'include\gstreamer-1.0\gst\gst.h', 'lib\gstreamer-1.0\gstlibav.dll')) {
+            if (-not (Test-Path (Join-Path $gstRoot $file))) { throw "GStreamer install lacks $file" }
+          }
+          Write-Host "GStreamer: $gstRoot"
+          echo "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gstRoot" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$gstRoot\lib\pkgconfig" >> $env:GITHUB_ENV
+          echo "$gstRoot\bin" >> $env:GITHUB_PATH
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build the zip
+        shell: pwsh
+        working-directory: Neurowatch-Motion
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.tag }}
+        run: ./scripts/package_windows.ps1 -Version "$env:RELEASE_VERSION" -OutDir dist/release
+      # Unzipped elsewhere, without GStreamer on PATH: serves with access codes.
+      - name: Check the unzipped program serves
+        shell: pwsh
+        working-directory: Neurowatch-Motion
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'portable'
+          Expand-Archive (Get-Item dist/release/nw-motion-*-windows-x86_64.zip).FullName $dir
+          $exe = Join-Path $dir 'nw-motion\bin\nw-motion.exe'
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          & $exe --check
+          if ($LASTEXITCODE -ne 0) { throw 'nw-motion --check failed' }
+          $codes = Join-Path $env:RUNNER_TEMP 'codes.json'
+          & $exe access-codes add $codes smoke --max-connections 1
+          if ($LASTEXITCODE -ne 0) { throw 'access-codes add failed' }
+          $log = Join-Path $env:RUNNER_TEMP 'daemon.log'
+          $daemon = Start-Process $exe -PassThru -NoNewWindow -RedirectStandardOutput $log `
+            -ArgumentList @('--listen', 'tcp:127.0.0.1:7699', '--identity', (Join-Path $env:RUNNER_TEMP 'identity.key'), '--access-codes', $codes)
+          $listening = $false
+          foreach ($i in 1..50) {
+            if ((Test-Path $log) -and (Select-String -Path $log -Pattern 'Listening for NeuroWatch' -Quiet)) { $listening = $true; break }
+            if ($daemon.HasExited) { break }
+            Start-Sleep -Milliseconds 200
+          }
+          if (-not $daemon.HasExited) { Stop-Process -Id $daemon.Id -Force }
+          if (-not $listening) { Get-Content $log -ErrorAction SilentlyContinue; throw 'nw-motion did not start listening' }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-windows-x86_64
+          path: Neurowatch-Motion/dist/release/*.zip
+          if-no-files-found: error
+
+  install-linux:
+    name: Install on ${{ matrix.image }} (${{ matrix.arch }})
+    needs: package-linux
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {image: 'ubuntu:22.04', format: deb, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'ubuntu:24.04', format: deb, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'debian:12', format: deb, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'debian:13', format: deb, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'fedora:43', format: rpm, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'archlinux:base', format: arch, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'ubuntu:22.04', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
+          - {image: 'debian:12', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
+          - {image: 'debian:13', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
+          - {image: 'fedora:43', format: rpm, arch: arm64, runner: ubuntu-24.04-arm}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-linux-${{ matrix.arch }}
+          path: dist/release
+      - name: Install, check, serve and remove in a clean distribution
+        env:
+          IMAGE: ${{ matrix.image }}
+          FORMAT: ${{ matrix.format }}
+        run: |
+          docker run --rm -v "$PWD:/work:ro" "$IMAGE" \
+            bash /work/scripts/smoke_linux_package.sh "$FORMAT"
+
+  publish:
+    name: Publish GitHub Release
+    needs: [version, package-linux, package-windows, install-linux]
+    if: (github.event_name == 'push' || github.event_name == 'release') && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Gather the packages
+        uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: dist/release
+          merge-multiple: true
+      # Stable names, so .../releases/latest/download/<name> always works.
+      - name: Add version-free download names
+        working-directory: dist/release
+        run: |
+          set -euo pipefail
+          declare -A latest=(
+            ['nw-motion-*-windows-x86_64.zip']=nw-motion-windows-x86_64.zip
+            ['nw-motion_*_amd64.deb']=nw-motion_amd64.deb
+            ['nw-motion_*_arm64.deb']=nw-motion_arm64.deb
+            ['nw-motion-*.x86_64.rpm']=nw-motion.x86_64.rpm
+            ['nw-motion-*.aarch64.rpm']=nw-motion.aarch64.rpm
+            ['nw-motion-*-x86_64.pkg.tar.zst']=nw-motion-x86_64.pkg.tar.zst
+            ['nw-motion-*-linux-x86_64.tar.gz']=nw-motion-linux-x86_64.tar.gz
+            ['nw-motion-*-linux-arm64.tar.gz']=nw-motion-linux-arm64.tar.gz
+          )
+          for pattern in "${!latest[@]}"; do
+            matches=($pattern)
+            if [[ ${#matches[@]} -ne 1 || ! -f "${matches[0]}" ]]; then
+              echo "expected one file for $pattern, found: ${matches[*]}" >&2
+              exit 1
+            fi
+            cp "${matches[0]}" "${latest[$pattern]}"
+          done
+          ls -la
+      - name: Generate SHA256SUMS
+        working-directory: dist/release
+        run: |
+          find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | sort | xargs sha256sum > SHA256SUMS
+          cat SHA256SUMS
+      - name: Create the release and upload the packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber dist/release/*
+            exit 0
+          fi
+          prerelease=()
+          [[ "$RELEASE_TAG" == *-* ]] && prerelease=(--prerelease) || prerelease=(--latest)
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "NeuroWatch Motion $RELEASE_TAG" \
+            --notes "The motion detection plugin for NeuroWatch. Packaged NeuroWatch already includes it; download this to run it on another computer or before the next NeuroWatch release. Installation: https://github.com/$GITHUB_REPOSITORY#download" \
+            --generate-notes \
+            "${prerelease[@]}" \
+            dist/release/*

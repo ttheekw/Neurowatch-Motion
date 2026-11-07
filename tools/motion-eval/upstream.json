@@ -1,0 +1,82 @@
+{
+  "repository": "https://github.com/andrewssobral/bgslibrary",
+  "revision": "5acc575246716005fc911384e9ca0ab25ea52de5",
+  "files": [
+    {
+      "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP.cpp",
+      "sha256": "e439dd42f1aed857fafc31d9647b7d7e3d1d0689114818ecf3d3222f8356cea9"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP.h",
+      "sha256": "99af544083019a1db36ce9f5d6c7d118f06ce91f0e746ba83c1f875627257c57"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP_.cpp",
+      "sha256": "e092bb6fae8265622619a73c6001f9462b1eb0b4c1fb4d644e10e5854616dbdc"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP_.h",
+      "sha256": "a0b552f90c7490c65bb296355508e6b66c62772c2a9400f25720de1b272802c9"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorPAWCS.cpp",
+      "sha256": "18ed78ddf223f8e32f442fdf04d30ff40f8fcba4fd22ba09de15aaef6bec0b32"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorPAWCS.h",
+      "sha256": "004a3bb9a2eebc842cd3f3e414b39fabaf57e82d06fe83ab3e645a39f2a9b452"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorSuBSENSE.cpp",
+      "sha256": "63e3c3e394fc33f7e5fd4ce3f50d895fb6985bac2183afe9b2390dbec79bbc17"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorSuBSENSE.h",
+      "sha256": "f31ee06ee9d4fcd3adb3983cf02729c25d73cd7bef7ed643e4cf9ea5d7e89df9"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/DistanceUtils.h",
+      "sha256": "bd427b9db5f4702af4a10bf842c95e2828bae3f339dd4244a852b84f3fd0841b"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/LBSP.cpp",
+      "sha256": "8bb3cf013d23f0307f30ca44c2f0871d13a787e2a10d06bc81defefb605f55da"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/LBSP.h",
+      "sha256": "2d383be8b7641ac9c5776c3788bc9ecc99513b5749bed0bb1e02ff5b6dd3e1fa"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/LBSP_.cpp",
+      "sha256": "eb5d59246fd6112078f5561f79d3c7bd77003a3611550ebe709f1eb0a5574e70"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/LBSP_.h",
+      "sha256": "a90f2afe443262cbbff870d759a4a321b762a6c4cb52d48cd33d0675abd4e297"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_1ch.i",
+      "sha256": "a7386f6478565955d79b26268510aa704657e36080cabb7f3561bfd5ee039764"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_3ch1t.i",
+      "sha256": "2437af96a154159caed3e285081026854db4ad278b5fc1d35e43e848e3601f77"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_3ch3t.i",
+      "sha256": "0bca0fd586ac02db384d6eda116ede0d00e1141f62de80b4a08cc75edefa1848"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_s3ch.i",
+      "sha256": "91a2fd0b010a879dc4306cfe23769ae0f029eec7be098eb0b6cde046d7822d94"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "e6a313e8c547b0992738ad4822ac0e955c1af03565e5c70f8b7ba1e790af3e33"
+    },
+    {
+      "path": "bgslibrary/algorithms/LBSP/RandUtils.h",
+      "sha256": "ce8d7a1159c4b4818506c1c3cb44630ee03e8b2011d68a4266d6c6a912f87b9c"
+    }
+  ]
+}

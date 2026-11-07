@@ -1,0 +1,28 @@
+NeuroWatch Motion (nw-motion)
+Copyright 2026 NeuroWatch Project
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Not a guaranteed security or alarm system: motion may be missed or reported
+wrongly, for example because of lighting, camera, network or hardware faults,
+settings or software defects. Do not rely on it as your only means of
+protecting people, property or evidence. You alone are responsible for using
+it lawfully, including privacy and surveillance laws.
+
+Trademarks (License section 6): the License grants no rights to use the name
+"NeuroWatch" or its logo. A modified version must not be presented as the
+official NeuroWatch Motion.
+
+Third-party software (GStreamer, FFmpeg and the Rust libraries this program
+uses) is under its own licences. Release packages carry the GStreamer and
+FFmpeg licences under gstreamer/licenses.

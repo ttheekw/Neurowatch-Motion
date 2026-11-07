@@ -1,0 +1,221 @@
+#![allow(dead_code)]
+#[path=__CONSTANT_DIV__]
+mod constant_div;
+#[path=__SHORTCUT__]
+mod shortcut;
+// Standalone harness: real detector.rs with equivalent settings data types.
+// No GStreamer, decoder, overlays, serde, or transport is measured.
+mod settings {
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    pub enum ZoneKind {
+        Include,
+        Exclude,
+    }
+    pub struct Zone {
+        pub id: String,
+        pub name: String,
+        pub kind: ZoneKind,
+        pub points: Vec<[f32; 2]>,
+    }
+    impl Zone {
+        pub fn is_valid(&self) -> bool {
+            !self.id.is_empty()
+                && self.points.len() >= 3
+                && self
+                    .points
+                    .iter()
+                    .all(|[x, y]| (0.0..=1.0).contains(x) && (0.0..=1.0).contains(y))
+        }
+    }
+    pub struct MotionSettings {
+        pub sensitivity: u8,
+        pub min_duration_sec: f32,
+        pub cooldown_sec: f32,
+        pub zones: Vec<Zone>,
+    }
+}
+#[path = __ORIGINAL__]
+mod detector;
+use detector::{Detector, HEIGHT, WIDTH};
+use settings::{MotionSettings, Zone, ZoneKind};
+use std::hint::black_box;
+#[repr(C)]
+struct Timespec {
+    sec: i64,
+    nsec: i64,
+}
+extern "C" {
+    fn clock_gettime(clock: i32, result: *mut Timespec) -> i32;
+}
+fn cpu_ns() -> i64 {
+    let mut t = Timespec { sec: 0, nsec: 0 };
+    assert_eq!(unsafe { clock_gettime(3, &mut t) }, 0);
+    t.sec * 1_000_000_000 + t.nsec
+}
+fn timed(mut observe: impl FnMut(&[u8], i64), frames: &[Vec<u8>], n: usize) -> f64 {
+    for i in 0..128 {
+        observe(black_box(&frames[i % 64]), i as i64 * 200);
+    }
+    let start = cpu_ns();
+    for i in 0..n {
+        observe(black_box(&frames[i % 64]), (i + 128) as i64 * 200);
+    }
+    (cpu_ns() - start) as f64 / 1000.0 / n as f64
+}
+fn main() {
+    validate();
+    let iterations: usize = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "2000".into())
+        .parse()
+        .unwrap();
+    println!("case,variant,median_thread_cpu_us_per_frame,min,max");
+    for (label, zones, motion) in [
+        ("quiet-0-zones", 0, false),
+        ("moving-0-zones", 0, true),
+        ("quiet-8-zones", 8, false),
+        ("quiet-32-zones", 32, false),
+        ("moving-32-zones", 32, true),
+    ] {
+        let cfg = MotionSettings {
+            sensitivity: 5,
+            min_duration_sec: 0.5,
+            cooldown_sec: 10.0,
+            zones: (0..zones)
+                .map(|i| {
+                    let x0 = i as f32 / zones as f32;
+                    let x1 = (i + 1) as f32 / zones as f32;
+                    Zone {
+                        id: format!("z{i}"),
+                        name: String::new(),
+                        kind: ZoneKind::Include,
+                        points: vec![[x0, 0.0], [x1, 0.0], [x1, 1.0], [x0, 1.0]],
+                    }
+                })
+                .collect(),
+        };
+        let frames: Vec<_> = (0..64)
+            .map(|phase| {
+                let mut f = vec![30u8; WIDTH * HEIGHT];
+                if motion {
+                    for y in 40..100 {
+                        for x in (20 + phase * 2)..(100 + phase * 2) {
+                            f[y * WIDTH + x] = 180;
+                        }
+                    }
+                }
+                f
+            })
+            .collect();
+        let mut times = [Vec::new(), Vec::new(), Vec::new()];
+        for round in 0..5 {
+            for offset in 0..3 {
+                let variant = (round + offset) % 3;
+                let us = match variant {
+                    0 => {
+                        let mut d = Detector::new(&cfg);
+                        timed(
+                            |f, t| {
+                                black_box(d.observe(f, t).unwrap());
+                            },
+                            &frames,
+                            iterations,
+                        )
+                    }
+                    1 => {
+                        let mut d = shortcut::Detector::new(&cfg);
+                        timed(
+                            |f, t| {
+                                black_box(d.observe(f, t).unwrap());
+                            },
+                            &frames,
+                            iterations,
+                        )
+                    }
+                    _ => {
+                        let mut d = constant_div::Detector::new(&cfg);
+                        timed(
+                            |f, t| {
+                                black_box(d.observe(f, t).unwrap());
+                            },
+                            &frames,
+                            iterations,
+                        )
+                    }
+                };
+                times[variant].push(us);
+            }
+        }
+        for (variant, t) in times.iter_mut().enumerate() {
+            t.sort_by(|a, b| a.total_cmp(b));
+            println!(
+                "{label},{},{:.3},{:.3},{:.3}",
+                ["original", "zone-shortcut", "shortcut-plus-constant-div"][variant],
+                t[2],
+                t[0],
+                t[4]
+            );
+        }
+    }
+}
+
+fn validate() {
+    let mut count = 0;
+    for sensitivity in 1..=10 {
+        for nzones in [0, 1, 8, 32] {
+            let cfg = MotionSettings {
+                sensitivity,
+                min_duration_sec: 0.5,
+                cooldown_sec: 1.0,
+                zones: (0..nzones)
+                    .map(|i| {
+                        let x0 = (i % 8) as f32 / 8.0;
+                        let x1 = (x0 + 0.3).min(1.0);
+                        Zone {
+                            id: format!("z{i}"),
+                            name: String::new(),
+                            kind: if i % 7 == 6 {
+                                ZoneKind::Exclude
+                            } else {
+                                ZoneKind::Include
+                            },
+                            points: vec![[x0, 0.1], [x1, 0.1], [x1, 0.9], [x0, 0.9]],
+                        }
+                    })
+                    .collect(),
+            };
+            let mut a = Detector::new(&cfg);
+            let mut b = constant_div::Detector::new(&cfg);
+            for phase in 0..320 {
+                let bg = if phase >= 160 { 110 } else { 30 };
+                let mut frame = vec![bg; WIDTH * HEIGHT];
+                if phase % 80 < 55 && phase > 0 {
+                    let x0 = (phase * 3) % 220;
+                    for y in 40..100 {
+                        for x in x0..x0 + 80 {
+                            frame[y * WIDTH + x] = 180;
+                        }
+                    }
+                }
+                // Include isolated sensor noise, changing darkness and all-image flashes.
+                for i in 0..40 {
+                    frame[(i * 1237 + phase * 97) % (WIDTH * HEIGHT)] =
+                        if phase % 2 == 0 { 0 } else { 255 };
+                }
+                if phase % 103 == 102 {
+                    frame.fill(240);
+                }
+                let at = phase as i64 * 200;
+                let x = a.observe(&frame, at).unwrap();
+                let y = b.observe(&frame, at).unwrap();
+                assert_eq!(x.active, y.active);
+                assert_eq!(x.score.to_bits(), y.score.to_bits());
+                assert_eq!(x.bbox, y.bbox);
+                assert_eq!(x.zones, y.zones);
+                assert_eq!(x.blocks, y.blocks);
+                count += 1;
+            }
+        }
+    }
+    eprintln!("Equivalent samples: {count}");
+}

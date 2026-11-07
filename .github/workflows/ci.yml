@@ -1,0 +1,58 @@
+name: CI
+
+# Every push to main, every pull request to it, and manual runs: format, lint
+# and all tests, using the included analytics libraries.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  rust:
+    name: fmt + clippy + test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      # Development files, the elements the analysis uses (h264parse,
+      # avdec_h264…) and those the tests encode with (x264enc).
+      - name: Install GStreamer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav
+      - name: rustfmt
+        run: cargo fmt --all -- --check
+      - name: clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: test
+        run: cargo test --workspace --locked
+      - name: Release build
+        run: cargo build --release --locked
+      - name: Evaluator tests
+        run: python3 -m unittest discover -s tools/motion-eval -v
+      - name: GStreamer has every element the analysis needs
+        run: cargo run --locked --quiet -- --check
+      - name: Packaging scripts
+        run: |
+          bash -n scripts/package_linux.sh scripts/smoke_linux_package.sh
+          scripts/package_linux.sh --version "v$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -n 1)" \
+            --arch x86_64 --format portable,deb,rpm,arch --dry-run

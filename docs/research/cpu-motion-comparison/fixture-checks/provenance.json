@@ -1,0 +1,2117 @@
+[
+  {
+    "run": "build/motion-eval/runs/synthetic-quiet",
+    "metadata": {
+      "complete": true,
+      "algorithms": [
+        "legacy",
+        "mog2",
+        "knn",
+        "subsense",
+        "pawcs"
+      ],
+      "sequence": "build/motion-eval/fixtures/quiet",
+      "source_fps_assumed": 5.0,
+      "analysis_fps_cap": 5,
+      "source_frames": 180,
+      "sampled_frames": 180,
+      "temporal_roi_inclusive": [
+        61,
+        180
+      ],
+      "sampled_frame_limit": null,
+      "input_color": "color",
+      "width": 320,
+      "height": 180,
+      "seed": 1,
+      "legacy_sensitivity": 5,
+      "alert_proxy_min_duration_sec": 0.5,
+      "alert_proxy_cooldown_sec": 10,
+      "alert_proxy_min_gt_pixels": 1,
+      "evaluation": "sampled foreground masks and derived alert proxies; not official full-rate CDnet scores",
+      "manifest_sha256": "3cdb3154d4d884ecc8afb5ce7578a487f539a37395915a3650a4798daaf53123",
+      "build": {
+        "upstream": {
+          "repository": "https://github.com/andrewssobral/bgslibrary",
+          "revision": "5acc575246716005fc911384e9ca0ab25ea52de5",
+          "files": [
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP.cpp",
+              "sha256": "e439dd42f1aed857fafc31d9647b7d7e3d1d0689114818ecf3d3222f8356cea9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP.h",
+              "sha256": "99af544083019a1db36ce9f5d6c7d118f06ce91f0e746ba83c1f875627257c57"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP_.cpp",
+              "sha256": "e092bb6fae8265622619a73c6001f9462b1eb0b4c1fb4d644e10e5854616dbdc"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP_.h",
+              "sha256": "a0b552f90c7490c65bb296355508e6b66c62772c2a9400f25720de1b272802c9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorPAWCS.cpp",
+              "sha256": "18ed78ddf223f8e32f442fdf04d30ff40f8fcba4fd22ba09de15aaef6bec0b32"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorPAWCS.h",
+              "sha256": "004a3bb9a2eebc842cd3f3e414b39fabaf57e82d06fe83ab3e645a39f2a9b452"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorSuBSENSE.cpp",
+              "sha256": "63e3c3e394fc33f7e5fd4ce3f50d895fb6985bac2183afe9b2390dbec79bbc17"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorSuBSENSE.h",
+              "sha256": "f31ee06ee9d4fcd3adb3983cf02729c25d73cd7bef7ed643e4cf9ea5d7e89df9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/DistanceUtils.h",
+              "sha256": "bd427b9db5f4702af4a10bf842c95e2828bae3f339dd4244a852b84f3fd0841b"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP.cpp",
+              "sha256": "8bb3cf013d23f0307f30ca44c2f0871d13a787e2a10d06bc81defefb605f55da"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP.h",
+              "sha256": "2d383be8b7641ac9c5776c3788bc9ecc99513b5749bed0bb1e02ff5b6dd3e1fa"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_.cpp",
+              "sha256": "eb5d59246fd6112078f5561f79d3c7bd77003a3611550ebe709f1eb0a5574e70"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_.h",
+              "sha256": "a90f2afe443262cbbff870d759a4a321b762a6c4cb52d48cd33d0675abd4e297"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_1ch.i",
+              "sha256": "a7386f6478565955d79b26268510aa704657e36080cabb7f3561bfd5ee039764"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_3ch1t.i",
+              "sha256": "2437af96a154159caed3e285081026854db4ad278b5fc1d35e43e848e3601f77"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_3ch3t.i",
+              "sha256": "0bca0fd586ac02db384d6eda116ede0d00e1141f62de80b4a08cc75edefa1848"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_s3ch.i",
+              "sha256": "91a2fd0b010a879dc4306cfe23769ae0f029eec7be098eb0b6cde046d7822d94"
+            },
+            {
+              "path": "LICENSE",
+              "sha256": "e6a313e8c547b0992738ad4822ac0e955c1af03565e5c70f8b7ba1e790af3e33"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/RandUtils.h",
+              "sha256": "ce8d7a1159c4b4818506c1c3cb44630ee03e8b2011d68a4266d6c6a912f87b9c"
+            }
+          ]
+        },
+        "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+        "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+        "opencv": "4.6.0",
+        "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+        "compile_command": [
+          "c++",
+          "-std=c++17",
+          "-O3",
+          "-DNDEBUG",
+          "-I/usr/include/opencv4",
+          "-I",
+          "build/motion-eval/upstream",
+          "tools/motion-eval/runner.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorLBSP.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorLBSP_.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorSuBSENSE.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorPAWCS.cpp",
+          "build/motion-eval/upstream/LBSP.cpp",
+          "build/motion-eval/upstream/LBSP_.cpp",
+          "build/motion-eval/liblegacy.a",
+          "-lopencv_video",
+          "-lopencv_imgcodecs",
+          "-lopencv_imgproc",
+          "-lopencv_features2d",
+          "-lopencv_core",
+          "-ldl",
+          "-lpthread",
+          "-lm",
+          "-o",
+          "build/motion-eval/motion-eval"
+        ],
+        "source_sha256": {
+          "tools/motion-eval/runner.cpp": "42883889a2827046b84c59b4177eabbadf5786739dcc12b641db6014b884ca6e",
+          "tools/motion-eval/mask_metrics.hpp": "7a3f701e611f4d5a8a822e9389f38faa14a4f249e6bfa1b6bc8f6bd9d02e4e2b",
+          "tools/motion-eval/legacy.rs": "6b3a35888418052c752cc9fdee54d7ee90b99b9ed3b66f5102c4a0049743f965",
+          "tools/motion-eval/compare.py": "1becd2bb51345ed55beefe6e02ec23e7139f9a7b2a32869014b9aa66b386d990",
+          "src/detector.rs": "b2b704198e2ab41771bb5e473b855beecbc6218c73f9e3e135a582f6da44971c"
+        },
+        "binary_sha256": "8d37f8c322fbe1d4a90501030205d89021b2908491d652979799d28ec4ad13b6"
+      },
+      "fixture": {
+        "synthetic": true,
+        "case": "quiet",
+        "source_fps": 5,
+        "frames": 180
+      },
+      "sampled_dataset_sha256": "e2b4a0e61a7bcfb8dd1b536c0c0338bb03731a7897cac19d52bc7b17e94c5c91"
+    },
+    "summary": {
+      "legacy": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 6912000,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "iou": null,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 0.0,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 0.276303,
+          "p95_model_cpu_ms": 0.34931,
+          "mean_model_cpu_ms": 0.2705329162011173,
+          "median_model_wall_ms": 0.281702,
+          "mean_preprocess_cpu_ms": 0.5036230555555555,
+          "first_frame_model_cpu_ms": 0.116541
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "coarse changed blocks",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=56980\nconstructor_cpu_ms=0.011167\n"
+      },
+      "mog2": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 6912000,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "iou": null,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 0.0,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 2.27127,
+          "p95_model_cpu_ms": 3.398203,
+          "mean_model_cpu_ms": 2.3976829888268156,
+          "median_model_wall_ms": 2.273218,
+          "mean_preprocess_cpu_ms": 0.09066018333333167,
+          "first_frame_model_cpu_ms": 7.564033
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=62372\nconstructor_cpu_ms=0.036578\n"
+      },
+      "knn": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 6912000,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "iou": null,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 0.0,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 2.367497,
+          "p95_model_cpu_ms": 4.094759,
+          "mean_model_cpu_ms": 2.6208826145251396,
+          "median_model_wall_ms": 2.395315,
+          "mean_preprocess_cpu_ms": 0.08773314999999722,
+          "first_frame_model_cpu_ms": 14.927205
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=61772\nconstructor_cpu_ms=0.0326\n"
+      },
+      "subsense": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 6912000,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "iou": null,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 0.0,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 52.092074,
+          "p95_model_cpu_ms": 63.039061,
+          "mean_model_cpu_ms": 48.86827840782123,
+          "median_model_wall_ms": 52.094538,
+          "mean_preprocess_cpu_ms": 0.07912114444447889,
+          "first_frame_model_cpu_ms": 393.889863
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=87972\nconstructor_cpu_ms=0.014206\n"
+      },
+      "pawcs": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 6912000,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "iou": null,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 0.0,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 90.114512,
+          "p95_model_cpu_ms": 104.567898,
+          "mean_model_cpu_ms": 86.85230237430167,
+          "median_model_wall_ms": 91.041252,
+          "mean_preprocess_cpu_ms": 0.07865393888883278,
+          "first_frame_model_cpu_ms": 1081.940901
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "iou": null,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 0.0,
+            "gt_foreground_episodes": 0,
+            "episode_alert_recall": null,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=206472\nconstructor_cpu_ms=0.013946\n"
+      }
+    }
+  },
+  {
+    "run": "build/motion-eval/runs/synthetic-moving",
+    "metadata": {
+      "complete": true,
+      "algorithms": [
+        "legacy",
+        "mog2",
+        "knn",
+        "subsense",
+        "pawcs"
+      ],
+      "sequence": "build/motion-eval/fixtures/moving",
+      "source_fps_assumed": 5.0,
+      "analysis_fps_cap": 5,
+      "source_frames": 180,
+      "sampled_frames": 180,
+      "temporal_roi_inclusive": [
+        61,
+        180
+      ],
+      "sampled_frame_limit": null,
+      "input_color": "color",
+      "width": 320,
+      "height": 180,
+      "seed": 1,
+      "legacy_sensitivity": 5,
+      "alert_proxy_min_duration_sec": 0.5,
+      "alert_proxy_cooldown_sec": 10,
+      "alert_proxy_min_gt_pixels": 1,
+      "evaluation": "sampled foreground masks and derived alert proxies; not official full-rate CDnet scores",
+      "manifest_sha256": "5cc7296e2123c5c6ba91a3c05374cc90ffedf3536c61f3a0fec090b2fd25fedb",
+      "build": {
+        "upstream": {
+          "repository": "https://github.com/andrewssobral/bgslibrary",
+          "revision": "5acc575246716005fc911384e9ca0ab25ea52de5",
+          "files": [
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP.cpp",
+              "sha256": "e439dd42f1aed857fafc31d9647b7d7e3d1d0689114818ecf3d3222f8356cea9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP.h",
+              "sha256": "99af544083019a1db36ce9f5d6c7d118f06ce91f0e746ba83c1f875627257c57"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP_.cpp",
+              "sha256": "e092bb6fae8265622619a73c6001f9462b1eb0b4c1fb4d644e10e5854616dbdc"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP_.h",
+              "sha256": "a0b552f90c7490c65bb296355508e6b66c62772c2a9400f25720de1b272802c9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorPAWCS.cpp",
+              "sha256": "18ed78ddf223f8e32f442fdf04d30ff40f8fcba4fd22ba09de15aaef6bec0b32"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorPAWCS.h",
+              "sha256": "004a3bb9a2eebc842cd3f3e414b39fabaf57e82d06fe83ab3e645a39f2a9b452"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorSuBSENSE.cpp",
+              "sha256": "63e3c3e394fc33f7e5fd4ce3f50d895fb6985bac2183afe9b2390dbec79bbc17"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorSuBSENSE.h",
+              "sha256": "f31ee06ee9d4fcd3adb3983cf02729c25d73cd7bef7ed643e4cf9ea5d7e89df9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/DistanceUtils.h",
+              "sha256": "bd427b9db5f4702af4a10bf842c95e2828bae3f339dd4244a852b84f3fd0841b"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP.cpp",
+              "sha256": "8bb3cf013d23f0307f30ca44c2f0871d13a787e2a10d06bc81defefb605f55da"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP.h",
+              "sha256": "2d383be8b7641ac9c5776c3788bc9ecc99513b5749bed0bb1e02ff5b6dd3e1fa"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_.cpp",
+              "sha256": "eb5d59246fd6112078f5561f79d3c7bd77003a3611550ebe709f1eb0a5574e70"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_.h",
+              "sha256": "a90f2afe443262cbbff870d759a4a321b762a6c4cb52d48cd33d0675abd4e297"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_1ch.i",
+              "sha256": "a7386f6478565955d79b26268510aa704657e36080cabb7f3561bfd5ee039764"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_3ch1t.i",
+              "sha256": "2437af96a154159caed3e285081026854db4ad278b5fc1d35e43e848e3601f77"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_3ch3t.i",
+              "sha256": "0bca0fd586ac02db384d6eda116ede0d00e1141f62de80b4a08cc75edefa1848"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_s3ch.i",
+              "sha256": "91a2fd0b010a879dc4306cfe23769ae0f029eec7be098eb0b6cde046d7822d94"
+            },
+            {
+              "path": "LICENSE",
+              "sha256": "e6a313e8c547b0992738ad4822ac0e955c1af03565e5c70f8b7ba1e790af3e33"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/RandUtils.h",
+              "sha256": "ce8d7a1159c4b4818506c1c3cb44630ee03e8b2011d68a4266d6c6a912f87b9c"
+            }
+          ]
+        },
+        "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+        "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+        "opencv": "4.6.0",
+        "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+        "compile_command": [
+          "c++",
+          "-std=c++17",
+          "-O3",
+          "-DNDEBUG",
+          "-I/usr/include/opencv4",
+          "-I",
+          "build/motion-eval/upstream",
+          "tools/motion-eval/runner.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorLBSP.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorLBSP_.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorSuBSENSE.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorPAWCS.cpp",
+          "build/motion-eval/upstream/LBSP.cpp",
+          "build/motion-eval/upstream/LBSP_.cpp",
+          "build/motion-eval/liblegacy.a",
+          "-lopencv_video",
+          "-lopencv_imgcodecs",
+          "-lopencv_imgproc",
+          "-lopencv_features2d",
+          "-lopencv_core",
+          "-ldl",
+          "-lpthread",
+          "-lm",
+          "-o",
+          "build/motion-eval/motion-eval"
+        ],
+        "source_sha256": {
+          "tools/motion-eval/runner.cpp": "42883889a2827046b84c59b4177eabbadf5786739dcc12b641db6014b884ca6e",
+          "tools/motion-eval/mask_metrics.hpp": "7a3f701e611f4d5a8a822e9389f38faa14a4f249e6bfa1b6bc8f6bd9d02e4e2b",
+          "tools/motion-eval/legacy.rs": "6b3a35888418052c752cc9fdee54d7ee90b99b9ed3b66f5102c4a0049743f965",
+          "tools/motion-eval/compare.py": "1becd2bb51345ed55beefe6e02ec23e7139f9a7b2a32869014b9aa66b386d990",
+          "src/detector.rs": "b2b704198e2ab41771bb5e473b855beecbc6218c73f9e3e135a582f6da44971c"
+        },
+        "binary_sha256": "8d37f8c322fbe1d4a90501030205d89021b2908491d652979799d28ec4ad13b6"
+      },
+      "fixture": {
+        "synthetic": true,
+        "case": "moving",
+        "source_fps": 5,
+        "frames": 180
+      },
+      "sampled_dataset_sha256": "b5294e51d19e803212ddaf8c793bb4d7ee6f10cc4ba33bd8f5ea57544e1d3429"
+    },
+    "summary": {
+      "legacy": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 122400,
+          "fp": 53600,
+          "fn": 1350,
+          "tn": 6734650,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 0.6954545454545454,
+          "recall": 0.9890909090909091,
+          "f1": 0.8166805671392827,
+          "iou": 0.6901606991824076,
+          "false_positive_rate": 0.007895996759105808,
+          "wrong_classification_percent": 0.7949942129629629,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 0.306055,
+          "p95_model_cpu_ms": 0.362729,
+          "mean_model_cpu_ms": 0.2910506033519553,
+          "median_model_wall_ms": 0.306766,
+          "mean_preprocess_cpu_ms": 0.5035378611111111,
+          "first_frame_model_cpu_ms": 0.145058
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": 0.46153846153846156,
+            "recall": 0.84,
+            "f1": 0.5957446808510638,
+            "iou": 0.42424242424242425,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 47.5,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 1600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "coarse changed blocks",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=56960\nconstructor_cpu_ms=0.016785\n"
+      },
+      "mog2": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 120505,
+          "fp": 0,
+          "fn": 3245,
+          "tn": 6788250,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 1.0,
+          "recall": 0.9737777777777777,
+          "f1": 0.9867147038955191,
+          "iou": 0.9737777777777777,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 0.046947337962962965,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 2.469479,
+          "p95_model_cpu_ms": 3.511168,
+          "mean_model_cpu_ms": 2.500186972067039,
+          "median_model_wall_ms": 2.468975,
+          "mean_preprocess_cpu_ms": 0.08720127222222111,
+          "first_frame_model_cpu_ms": 8.826035
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=62492\nconstructor_cpu_ms=0.032865\n"
+      },
+      "knn": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 123750,
+          "fp": 0,
+          "fn": 0,
+          "tn": 6788250,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "iou": 1.0,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 0.0,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 2.666909,
+          "p95_model_cpu_ms": 4.260986,
+          "mean_model_cpu_ms": 2.8438962011173183,
+          "median_model_wall_ms": 2.667874,
+          "mean_preprocess_cpu_ms": 0.08533118888889112,
+          "first_frame_model_cpu_ms": 14.489333
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=61868\nconstructor_cpu_ms=0.05001\n"
+      },
+      "subsense": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 123035,
+          "fp": 7534,
+          "fn": 715,
+          "tn": 6780716,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 0.9422987079628395,
+          "recall": 0.9942222222222222,
+          "f1": 0.9675643581486244,
+          "iou": 0.9371667529935103,
+          "false_positive_rate": 0.0011098589474459544,
+          "wrong_classification_percent": 0.11934317129629629,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 52.034697,
+          "p95_model_cpu_ms": 61.577519,
+          "mean_model_cpu_ms": 51.52433274860335,
+          "median_model_wall_ms": 52.03747,
+          "mean_preprocess_cpu_ms": 0.08060433333336778,
+          "first_frame_model_cpu_ms": 393.661888
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=88100\nconstructor_cpu_ms=0.028051\n"
+      },
+      "pawcs": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 122941,
+          "fp": 5305,
+          "fn": 809,
+          "tn": 6782945,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 0.9586341874210502,
+          "recall": 0.9934626262626263,
+          "f1": 0.9757377101223829,
+          "iou": 0.9526248498702103,
+          "false_positive_rate": 0.000781497440430155,
+          "wrong_classification_percent": 0.08845486111111112,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 99.083454,
+          "p95_model_cpu_ms": 136.061175,
+          "mean_model_cpu_ms": 103.65977397206704,
+          "median_model_wall_ms": 99.4152,
+          "mean_preprocess_cpu_ms": 0.0840990500000389,
+          "first_frame_model_cpu_ms": 1211.016322
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.4895833333333333,
+            "recall": 0.94,
+            "f1": 0.6438356164383562,
+            "iou": 0.47474747474747475,
+            "false_positive_rate": 0.7,
+            "wrong_classification_percent": 43.333333333333336,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.8,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=206528\nconstructor_cpu_ms=0.010684\n"
+      }
+    }
+  },
+  {
+    "run": "build/motion-eval/runs/synthetic-large-object",
+    "metadata": {
+      "complete": true,
+      "algorithms": [
+        "legacy",
+        "mog2",
+        "knn",
+        "subsense",
+        "pawcs"
+      ],
+      "sequence": "build/motion-eval/fixtures/large-object",
+      "source_fps_assumed": 5.0,
+      "analysis_fps_cap": 5,
+      "source_frames": 180,
+      "sampled_frames": 180,
+      "temporal_roi_inclusive": [
+        61,
+        180
+      ],
+      "sampled_frame_limit": null,
+      "input_color": "color",
+      "width": 320,
+      "height": 180,
+      "seed": 1,
+      "legacy_sensitivity": 5,
+      "alert_proxy_min_duration_sec": 0.5,
+      "alert_proxy_cooldown_sec": 10,
+      "alert_proxy_min_gt_pixels": 1,
+      "evaluation": "sampled foreground masks and derived alert proxies; not official full-rate CDnet scores",
+      "manifest_sha256": "ab77f46b337349ca03d3b678f97777eb12a27f2dd015a79757f447c310f746b6",
+      "build": {
+        "upstream": {
+          "repository": "https://github.com/andrewssobral/bgslibrary",
+          "revision": "5acc575246716005fc911384e9ca0ab25ea52de5",
+          "files": [
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP.cpp",
+              "sha256": "e439dd42f1aed857fafc31d9647b7d7e3d1d0689114818ecf3d3222f8356cea9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP.h",
+              "sha256": "99af544083019a1db36ce9f5d6c7d118f06ce91f0e746ba83c1f875627257c57"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP_.cpp",
+              "sha256": "e092bb6fae8265622619a73c6001f9462b1eb0b4c1fb4d644e10e5854616dbdc"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorLBSP_.h",
+              "sha256": "a0b552f90c7490c65bb296355508e6b66c62772c2a9400f25720de1b272802c9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorPAWCS.cpp",
+              "sha256": "18ed78ddf223f8e32f442fdf04d30ff40f8fcba4fd22ba09de15aaef6bec0b32"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorPAWCS.h",
+              "sha256": "004a3bb9a2eebc842cd3f3e414b39fabaf57e82d06fe83ab3e645a39f2a9b452"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorSuBSENSE.cpp",
+              "sha256": "63e3c3e394fc33f7e5fd4ce3f50d895fb6985bac2183afe9b2390dbec79bbc17"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/BackgroundSubtractorSuBSENSE.h",
+              "sha256": "f31ee06ee9d4fcd3adb3983cf02729c25d73cd7bef7ed643e4cf9ea5d7e89df9"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/DistanceUtils.h",
+              "sha256": "bd427b9db5f4702af4a10bf842c95e2828bae3f339dd4244a852b84f3fd0841b"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP.cpp",
+              "sha256": "8bb3cf013d23f0307f30ca44c2f0871d13a787e2a10d06bc81defefb605f55da"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP.h",
+              "sha256": "2d383be8b7641ac9c5776c3788bc9ecc99513b5749bed0bb1e02ff5b6dd3e1fa"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_.cpp",
+              "sha256": "eb5d59246fd6112078f5561f79d3c7bd77003a3611550ebe709f1eb0a5574e70"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_.h",
+              "sha256": "a90f2afe443262cbbff870d759a4a321b762a6c4cb52d48cd33d0675abd4e297"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_1ch.i",
+              "sha256": "a7386f6478565955d79b26268510aa704657e36080cabb7f3561bfd5ee039764"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_3ch1t.i",
+              "sha256": "2437af96a154159caed3e285081026854db4ad278b5fc1d35e43e848e3601f77"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_3ch3t.i",
+              "sha256": "0bca0fd586ac02db384d6eda116ede0d00e1141f62de80b4a08cc75edefa1848"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/LBSP_16bits_dbcross_s3ch.i",
+              "sha256": "91a2fd0b010a879dc4306cfe23769ae0f029eec7be098eb0b6cde046d7822d94"
+            },
+            {
+              "path": "LICENSE",
+              "sha256": "e6a313e8c547b0992738ad4822ac0e955c1af03565e5c70f8b7ba1e790af3e33"
+            },
+            {
+              "path": "bgslibrary/algorithms/LBSP/RandUtils.h",
+              "sha256": "ce8d7a1159c4b4818506c1c3cb44630ee03e8b2011d68a4266d6c6a912f87b9c"
+            }
+          ]
+        },
+        "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+        "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+        "opencv": "4.6.0",
+        "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+        "compile_command": [
+          "c++",
+          "-std=c++17",
+          "-O3",
+          "-DNDEBUG",
+          "-I/usr/include/opencv4",
+          "-I",
+          "build/motion-eval/upstream",
+          "tools/motion-eval/runner.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorLBSP.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorLBSP_.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorSuBSENSE.cpp",
+          "build/motion-eval/upstream/BackgroundSubtractorPAWCS.cpp",
+          "build/motion-eval/upstream/LBSP.cpp",
+          "build/motion-eval/upstream/LBSP_.cpp",
+          "build/motion-eval/liblegacy.a",
+          "-lopencv_video",
+          "-lopencv_imgcodecs",
+          "-lopencv_imgproc",
+          "-lopencv_features2d",
+          "-lopencv_core",
+          "-ldl",
+          "-lpthread",
+          "-lm",
+          "-o",
+          "build/motion-eval/motion-eval"
+        ],
+        "source_sha256": {
+          "tools/motion-eval/runner.cpp": "42883889a2827046b84c59b4177eabbadf5786739dcc12b641db6014b884ca6e",
+          "tools/motion-eval/mask_metrics.hpp": "7a3f701e611f4d5a8a822e9389f38faa14a4f249e6bfa1b6bc8f6bd9d02e4e2b",
+          "tools/motion-eval/legacy.rs": "6b3a35888418052c752cc9fdee54d7ee90b99b9ed3b66f5102c4a0049743f965",
+          "tools/motion-eval/compare.py": "1becd2bb51345ed55beefe6e02ec23e7139f9a7b2a32869014b9aa66b386d990",
+          "src/detector.rs": "b2b704198e2ab41771bb5e473b855beecbc6218c73f9e3e135a582f6da44971c"
+        },
+        "binary_sha256": "8d37f8c322fbe1d4a90501030205d89021b2908491d652979799d28ec4ad13b6"
+      },
+      "fixture": {
+        "synthetic": true,
+        "case": "large-object",
+        "source_fps": 5,
+        "frames": 180
+      },
+      "sampled_dataset_sha256": "b085052260a171fee331407d28640871413b4b5d77964a8380aafc36cdfb948b"
+    },
+    "summary": {
+      "legacy": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 2635000,
+          "tn": 4277000,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0,
+          "iou": 0.0,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 38.12210648148148,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 0.253973,
+          "p95_model_cpu_ms": 0.352839,
+          "mean_model_cpu_ms": 0.2544394301675978,
+          "median_model_wall_ms": 0.257794,
+          "mean_preprocess_cpu_ms": 0.38739508333333333,
+          "first_frame_model_cpu_ms": 0.182848
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": null,
+            "recall": 0.0,
+            "f1": 0.0,
+            "iou": 0.0,
+            "false_positive_rate": 0.0,
+            "wrong_classification_percent": 41.666666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 0.0,
+            "median_first_alert_delay_ms": null,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 0.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "coarse changed blocks",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=57136\nconstructor_cpu_ms=0.015658\n"
+      },
+      "mog2": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 1001300,
+          "fp": 0,
+          "fn": 1633700,
+          "tn": 4277000,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 1.0,
+          "recall": 0.38,
+          "f1": 0.5507246376811594,
+          "iou": 0.38,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 23.63570601851852,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 2.880113,
+          "p95_model_cpu_ms": 3.87432,
+          "mean_model_cpu_ms": 2.83802187150838,
+          "median_model_wall_ms": 2.89054,
+          "mean_preprocess_cpu_ms": 0.08989255000000444,
+          "first_frame_model_cpu_ms": 8.968201
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.7230769230769231,
+            "recall": 0.94,
+            "f1": 0.8173913043478261,
+            "iou": 0.6911764705882353,
+            "false_positive_rate": 0.2571428571428571,
+            "wrong_classification_percent": 17.5,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 3.6,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.7230769230769231,
+            "recall": 0.94,
+            "f1": 0.8173913043478261,
+            "iou": 0.6911764705882353,
+            "false_positive_rate": 0.2571428571428571,
+            "wrong_classification_percent": 17.5,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 3.6,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.7230769230769231,
+            "recall": 0.94,
+            "f1": 0.8173913043478261,
+            "iou": 0.6911764705882353,
+            "false_positive_rate": 0.2571428571428571,
+            "wrong_classification_percent": 17.5,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 3.6,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.7230769230769231,
+            "recall": 0.94,
+            "f1": 0.8173913043478261,
+            "iou": 0.6911764705882353,
+            "false_positive_rate": 0.2571428571428571,
+            "wrong_classification_percent": 17.5,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 3.6,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": 0.7230769230769231,
+            "recall": 0.94,
+            "f1": 0.8173913043478261,
+            "iou": 0.6911764705882353,
+            "false_positive_rate": 0.2571428571428571,
+            "wrong_classification_percent": 17.5,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 3.6,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=62404\nconstructor_cpu_ms=0.036287\n"
+      },
+      "knn": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 2134817,
+          "fp": 0,
+          "fn": 500183,
+          "tn": 4277000,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 1.0,
+          "recall": 0.8101772296015181,
+          "f1": 0.8951358091935183,
+          "iou": 0.8101772296015181,
+          "false_positive_rate": 0.0,
+          "wrong_classification_percent": 7.236443865740741,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 2.933475,
+          "p95_model_cpu_ms": 19.884048,
+          "mean_model_cpu_ms": 6.492026826815643,
+          "median_model_wall_ms": 2.935172,
+          "mean_preprocess_cpu_ms": 0.08517872777777723,
+          "first_frame_model_cpu_ms": 15.902697
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.5108695652173914,
+            "recall": 0.94,
+            "f1": 0.6619718309859155,
+            "iou": 0.49473684210526314,
+            "false_positive_rate": 0.6428571428571429,
+            "wrong_classification_percent": 40.0,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.5108695652173914,
+            "recall": 0.94,
+            "f1": 0.6619718309859155,
+            "iou": 0.49473684210526314,
+            "false_positive_rate": 0.6428571428571429,
+            "wrong_classification_percent": 40.0,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.5108695652173914,
+            "recall": 0.94,
+            "f1": 0.6619718309859155,
+            "iou": 0.49473684210526314,
+            "false_positive_rate": 0.6428571428571429,
+            "wrong_classification_percent": 40.0,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.5108695652173914,
+            "recall": 0.94,
+            "f1": 0.6619718309859155,
+            "iou": 0.49473684210526314,
+            "false_positive_rate": 0.6428571428571429,
+            "wrong_classification_percent": 40.0,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": 0.5108695652173914,
+            "recall": 0.94,
+            "f1": 0.6619718309859155,
+            "iou": 0.49473684210526314,
+            "false_positive_rate": 0.6428571428571429,
+            "wrong_classification_percent": 40.0,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 9.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=61880\nconstructor_cpu_ms=0.026659\n"
+      },
+      "subsense": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 2634901,
+          "fp": 548199,
+          "fn": 99,
+          "tn": 3728801,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 0.8277782664697936,
+          "recall": 0.9999624288425047,
+          "f1": 0.9057599559993812,
+          "iou": 0.8277525219127048,
+          "false_positive_rate": 0.12817371989712414,
+          "wrong_classification_percent": 7.932552083333333,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 56.177093,
+          "p95_model_cpu_ms": 108.697484,
+          "mean_model_cpu_ms": 63.72181405586592,
+          "median_model_wall_ms": 56.179283,
+          "mean_preprocess_cpu_ms": 0.08309411666669,
+          "first_frame_model_cpu_ms": 390.707621
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=87976\nconstructor_cpu_ms=0.023436\n"
+      },
+      "pawcs": {
+        "processed_frames": 180,
+        "scored_frames": 120,
+        "pixel_counts": {
+          "tp": 471088,
+          "fp": 1034825,
+          "fn": 2163912,
+          "tn": 3242175,
+          "shadow_fp": 0,
+          "shadow_pixels": 0
+        },
+        "pixel_metrics": {
+          "precision": 0.31282550851211194,
+          "recall": 0.1787810246679317,
+          "f1": 0.22752856676776353,
+          "iou": 0.1283679739497115,
+          "false_positive_rate": 0.24195113397241058,
+          "wrong_classification_percent": 46.27802372685185,
+          "shadow_false_positive_rate": null
+        },
+        "timing": {
+          "median_model_cpu_ms": 109.290624,
+          "p95_model_cpu_ms": 693.665591,
+          "mean_model_cpu_ms": 212.01555160335195,
+          "median_model_wall_ms": 109.306305,
+          "mean_preprocess_cpu_ms": 0.08425890555546056,
+          "first_frame_model_cpu_ms": 1196.123967
+        },
+        "alert_proxy_operating_points": {
+          "0.001": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          },
+          "0.005": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          },
+          "0.01": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          },
+          "0.02": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          },
+          "0.06": {
+            "precision": 0.4845360824742268,
+            "recall": 0.94,
+            "f1": 0.6394557823129252,
+            "iou": 0.47,
+            "false_positive_rate": 0.7142857142857143,
+            "wrong_classification_percent": 44.166666666666664,
+            "gt_foreground_episodes": 1,
+            "episode_alert_recall": 1.0,
+            "median_first_alert_delay_ms": 600.0,
+            "false_alert_starts": 0,
+            "false_alert_starts_per_scored_hour": 0.0,
+            "background_active_seconds": 10.0,
+            "scored_seconds": 24.0
+          }
+        },
+        "mask_kind": "foreground segmentation",
+        "runtime": "opencv=4.6.0\nfeatures=SSE SSE2 *SSE4.1 *SSE4.2 *FP16 *AVX *AVX2 *AVX512-SKX?\nthreads=1\nopencl=0\nseed=1\npeak_process_rss_kib=206232\nconstructor_cpu_ms=0.022781\n"
+      }
+    }
+  }
+]

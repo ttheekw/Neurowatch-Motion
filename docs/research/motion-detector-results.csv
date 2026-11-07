@@ -1,0 +1,16 @@
+case,variant,median_thread_cpu_us_per_frame,min,max
+quiet-0-zones,original,190.717,180.565,306.243
+quiet-0-zones,zone-shortcut,178.187,165.723,258.753
+quiet-0-zones,shortcut-plus-constant-div,206.906,156.975,268.658
+moving-0-zones,original,251.568,244.831,306.652
+moving-0-zones,zone-shortcut,306.289,285.985,312.871
+moving-0-zones,shortcut-plus-constant-div,271.118,228.094,292.744
+quiet-8-zones,original,495.610,488.390,613.693
+quiet-8-zones,zone-shortcut,246.575,242.013,306.371
+quiet-8-zones,shortcut-plus-constant-div,275.470,222.726,294.507
+quiet-32-zones,original,1266.824,1086.078,1367.678
+quiet-32-zones,zone-shortcut,304.996,275.491,343.507
+quiet-32-zones,shortcut-plus-constant-div,287.167,273.115,316.655
+moving-32-zones,original,972.996,773.631,1034.101
+moving-32-zones,zone-shortcut,949.762,775.248,1005.913
+moving-32-zones,shortcut-plus-constant-div,956.165,757.779,1028.412
