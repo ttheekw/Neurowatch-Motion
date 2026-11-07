@@ -22,9 +22,12 @@ function Wait-Daemon {
 
 function Install-Daemon {
     $log = Join-Path $env:RUNNER_TEMP 'motion-install.log'
-    $process = Start-Process $Installer -Wait -PassThru -ArgumentList @(
+    # Start-Process -Wait also waits for descendants, including the daemon
+    # this installer deliberately leaves running. Wait for setup itself only.
+    $process = Start-Process $Installer -PassThru -ArgumentList @(
         '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-',
         "/DIR=`"$InstallDir`"", "/LOG=`"$log`"")
+    if (-not $process.WaitForExit(180000)) { throw 'Installer did not finish within three minutes' }
     if ($process.ExitCode -ne 0) { Get-Content $log; throw "Installer failed: $($process.ExitCode)" }
     Wait-Daemon $true | Out-Null
     # This is the default local discovery pipe, without any --listen argument.
