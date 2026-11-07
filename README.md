@@ -247,19 +247,19 @@ evaluation tool does not change the production detector or its build dependencie
    (`scripts/build_release_gstreamer.sh`). Analytics libraries come from this repo's `vendor/`.
 3. Push, wait for CI, then tag: `git tag v0.2.0 && git push origin v0.2.0`.
 
-Pushing `main` runs CI. Release packages are built by a version tag or a manual Release
-workflow run; a normal branch push does not publish a release.
+Pushing `main` or opening a pull request runs source checks and tests. Downloadable executables,
+installers and Linux packages are built and published **only when a version tag is pushed**
+(for example, `v0.2.0`). Normal branch pushes do not produce downloadable packages.
 
 The [Release workflow](.github/workflows/release.yml) builds the Windows installer/ZIP and Linux
 packages (x86_64 and arm64), installs each one in clean Ubuntu, Debian, Fedora and Arch
 containers, runs `--check`, serves with an access code, and only then publishes the GitHub
 Release with `SHA256SUMS` and the version-free names the download table links to. A tag with
-a suffix (`v0.3.0-rc.1`) is published as a pre-release. **Run workflow** on the Release
-workflow builds test packages without publishing. The pinned NeuroWatch revision is public;
+a suffix (`v0.3.0-rc.1`) is published as a pre-release. The pinned NeuroWatch revision is public;
 no cross-repository token is required.
 
-The [Windows workflow](.github/workflows/windows.yml) also runs on pushes and pull requests. It
-checks installer startup at the default local pipe, the sign-in shortcut, identity preservation
+The [Windows workflow](.github/workflows/windows.yml) is called only by the tagged release
+workflow. It checks installer startup at the default local pipe, the sign-in shortcut, identity preservation
 on upgrade, and shutdown/shortcut removal on uninstall. Linux native packages include the
 automatically enabled user service; package smoke tests also check the default local socket.
 
