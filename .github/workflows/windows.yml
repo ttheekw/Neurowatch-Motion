@@ -96,6 +96,10 @@ jobs:
             throw
           }
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: Neurowatch-Motion
+          cache-on-failure: true
       - name: Build installer and portable zip
         shell: pwsh
         working-directory: Neurowatch-Motion
