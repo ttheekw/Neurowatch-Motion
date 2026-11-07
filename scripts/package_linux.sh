@@ -195,14 +195,30 @@ needed() {
     readelf -d "$1" | sed -n 's/.*(NEEDED).*Shared library: \[\(.*\)\]/\1/p'
 }
 # The SDK libraries the binary and plugins need, following their own needs.
+# Older SDK builds use the host's ORC without installing it into the SDK.
+ORC_COPYRIGHT=""
 queue=("$BUNDLE_DIR/bin/nw-motion" "$GST_LIB/gstreamer-1.0/"*.so)
 while [[ ${#queue[@]} -gt 0 ]]; do
     file="${queue[0]}"
     queue=("${queue[@]:1}")
     while read -r soname; do
         [[ -n "$soname" && "$soname" =~ $BUNDLED_LIBS && ! -e "$GST_LIB/$soname" ]] || continue
-        [[ -e "$SDK/lib/$soname" ]] || continue
-        cp -L "$SDK/lib/$soname" "$GST_LIB/$soname"
+        library="$SDK/lib/$soname"
+        if [[ ! -e "$library" && "$soname" == liborc-0.4.so.0 ]]; then
+            orc_libdir="$(pkg-config --variable=libdir orc-0.4)" \
+                || fail 'ORC runtime missing from SDK; install the ORC development package'
+            library="$orc_libdir/$soname"
+            [[ -f "$library" ]] || fail "ORC runtime not found: $library"
+            orc_prefix="$(pkg-config --variable=prefix orc-0.4)"
+            for copyright in "$orc_prefix"/share/doc/liborc-0.4-*/copyright \
+                "$orc_prefix/share/licenses/orc/COPYING" "$orc_prefix/share/doc/orc/COPYING"; do
+                if [[ -f "$copyright" ]]; then ORC_COPYRIGHT="$copyright"; break; fi
+            done
+            [[ -n "$ORC_COPYRIGHT" ]] || fail "ORC runtime copyright missing under $orc_prefix/share"
+            echo "  bundling system ORC: $library"
+        fi
+        [[ -e "$library" ]] || continue
+        cp -L "$library" "$GST_LIB/$soname"
         queue+=("$GST_LIB/$soname")
     done < <(needed "$file")
 done
@@ -242,6 +258,9 @@ if [[ -d "$SDK/share/licenses/neurowatch-media" ]]; then
     cp "$SDK/VERSIONS.txt" "$BUNDLE_DIR/gstreamer/VERSIONS.txt"
 else
     [[ "${NW_MOTION_LENIENT_DEPS:-}" == 1 ]] || fail "SDK has no media licences (share/licenses/neurowatch-media)"
+fi
+if [[ -n "$ORC_COPYRIGHT" ]]; then
+    install -m 0644 "$ORC_COPYRIGHT" "$BUNDLE_DIR/gstreamer/licenses/orc.txt"
 fi
 "$BUNDLE_DIR/bin/nw-motion" --check
 
