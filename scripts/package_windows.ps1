@@ -1,4 +1,4 @@
-# Build the nw-motion Windows release: a portable zip with its own GStreamer
+# Build the nw-motion Windows release: an installer and portable zip with GStreamer
 # (only the plugins the analysis uses, and the DLLs they need) and the MSVC
 # runtime, so it runs without installing anything.
 #
@@ -8,7 +8,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$Version,
     [string]$OutDir = 'dist/release',
-    [string]$GStreamerRoot = $env:GSTREAMER_1_0_ROOT_MSVC_X86_64
+    [string]$GStreamerRoot = $env:GSTREAMER_1_0_ROOT_MSVC_X86_64,
+    [string]$InnoSetupCompiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -33,6 +34,7 @@ if (-not $GStreamerRoot -or -not (Test-Path (Join-Path $GStreamerRoot 'bin/gstre
     throw 'GStreamer MSVC runtime not found: set GSTREAMER_1_0_ROOT_MSVC_X86_64'
 }
 if (-not $env:VCToolsRedistDir) { throw 'Run from an MSVC developer shell (VCToolsRedistDir missing)' }
+if (-not (Test-Path $InnoSetupCompiler)) { throw "Inno Setup compiler not found: $InnoSetupCompiler" }
 
 $WorkDir = Join-Path $Root 'build/release-windows-x86_64'
 $BundleDir = Join-Path $WorkDir 'bundle/nw-motion'
@@ -42,16 +44,18 @@ if (Test-Path $WorkDir) { Remove-Item -Recurse -Force $WorkDir }
 New-Item -ItemType Directory -Force -Path $Bin, $Plugins, $OutDir | Out-Null
 $OutDir = (Resolve-Path $OutDir).Path
 
-Write-Host '[1/4] Building nw-motion (release)'
+Write-Host '[1/5] Building nw-motion (release)'
 $env:PKG_CONFIG_PATH = Join-Path $GStreamerRoot 'lib/pkgconfig'
 Invoke-Native 'cargo' @('build', '--manifest-path', (Join-Path $Root 'Cargo.toml'), '--release', '--locked')
 $Target = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $Root 'target' }
 Copy-Item (Join-Path $Target 'release/nw-motion.exe') $Bin
+Invoke-Native 'rustc' @('--edition=2021', '-C', 'opt-level=s', '-C', 'strip=symbols',
+    (Join-Path $PSScriptRoot 'packaging/windows-launcher.rs'), '-o', (Join-Path $Bin 'nw-motion-launcher.exe'))
 foreach ($file in @('LICENSE', 'NOTICE', 'README.md')) {
     Copy-Item (Join-Path $Root $file) $BundleDir
 }
 
-Write-Host '[2/4] Bundling GStreamer and the MSVC runtime'
+Write-Host '[2/5] Bundling GStreamer and the MSVC runtime'
 # The plugins the analysis pipelines use (src/worker.rs), then the hardware
 # decoders --hardware-decoding may pick, when this GStreamer has them.
 $Required = @('coreelements', 'app', 'playback', 'typefindfunctions',
@@ -95,7 +99,7 @@ $Crt = Get-ChildItem (Join-Path $env:VCToolsRedistDir 'x64/Microsoft.VC*.CRT') -
 if (-not $Crt) { throw 'MSVC x64 redistributable runtime missing' }
 Copy-Item (Join-Path $Crt.FullName '*.dll') $Bin -Force
 
-Write-Host '[3/4] Checking the bundle without the GStreamer install'
+Write-Host '[3/5] Checking the bundle without the GStreamer install'
 $SavedPath = $env:PATH
 $SavedLocal = $env:LOCALAPPDATA
 try {
@@ -111,8 +115,12 @@ try {
     $env:LOCALAPPDATA = $SavedLocal
 }
 
-Write-Host '[4/4] Zip'
+Write-Host '[4/5] Zip'
 $Zip = Join-Path $OutDir "nw-motion-$Version-windows-x86_64.zip"
 if (Test-Path $Zip) { Remove-Item $Zip }
 Compress-Archive -Path $BundleDir -DestinationPath $Zip
 Write-Host "  zip: $Zip"
+
+Write-Host '[5/5] Installer (starts locally now and at sign-in)'
+Invoke-Native $InnoSetupCompiler @("/DVersion=$Version", "/DBundleDir=$BundleDir", "/DOutputDir=$OutDir",
+    (Join-Path $PSScriptRoot 'packaging/windows-installer.iss'))
