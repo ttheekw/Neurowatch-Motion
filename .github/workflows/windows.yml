@@ -1,24 +1,19 @@
 name: Windows build and installer
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
   workflow_call:
     inputs:
       version:
-        description: Release version; defaults to Cargo.toml for CI
+        description: Version tag validated by the Release workflow
         type: string
-        required: false
+        required: true
 
 permissions:
   contents: read
 
 concurrency:
   group: windows-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+  cancel-in-progress: false
 
 jobs:
   package-windows:
@@ -107,10 +102,6 @@ jobs:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           try {
-            if (-not $env:RELEASE_VERSION) {
-              $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.*)"' | Select-Object -First 1).Matches[0].Groups[1].Value
-              $env:RELEASE_VERSION = "v$version"
-            }
             ./scripts/package_windows.ps1 -Version "$env:RELEASE_VERSION" -OutDir dist/release
           } catch {
             $message = $_.Exception.Message.Replace("`r", '').Replace("`n", '%0A')

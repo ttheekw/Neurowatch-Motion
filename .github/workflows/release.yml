@@ -1,19 +1,10 @@
 name: Release
 
-# A v* tag (or a published GitHub Release) builds every package, installs and
-# checks each one, then publishes them. Manual runs only build artifacts.
+# Pushing a v* version tag builds, checks and publishes every release package.
 on:
   push:
     tags:
       - 'v*'
-  release:
-    types: [published]
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Test build version, for example v0.2.0-rc.1 (no publishing)'
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -31,11 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - id: version
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          tag="${INPUT_VERSION:-${RELEASE_TAG:-$GITHUB_REF_NAME}}"
+          tag="$GITHUB_REF_NAME"
           [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]] || {
             echo 'Expected vMAJOR.MINOR.PATCH, optionally followed by -rc.1'; exit 1;
           }
@@ -164,7 +152,7 @@ jobs:
   publish:
     name: Publish GitHub Release
     needs: [version, package-linux, package-windows, install-linux]
-    if: (github.event_name == 'push' || github.event_name == 'release') && startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
