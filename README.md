@@ -245,11 +245,11 @@ evaluation tool does not change the production detector or its build dependencie
 1. Set the new version in `Cargo.toml` and run `cargo build` (updates `Cargo.lock`).
 2. Pin `neurowatch.ref` to a public NeuroWatch commit containing the GStreamer build
    (`scripts/build_release_gstreamer.sh`). Analytics libraries come from this repo's `vendor/`.
-3. Push, wait for CI, then tag: `git tag v0.2.0 && git push origin v0.2.0`.
+3. Push, wait for CI, then tag: `git tag v0.2.1 && git push origin v0.2.1`.
 
 Pushing `main` or opening a pull request runs source checks and tests. Downloadable executables,
 installers and Linux packages are built and published **only when a version tag is pushed**
-(for example, `v0.2.0`). Normal branch pushes do not produce downloadable packages.
+(for example, `v0.2.1`). Normal branch pushes do not produce downloadable packages.
 
 The [Release workflow](.github/workflows/release.yml) builds the Windows installer/ZIP and Linux
 packages (x86_64 and arm64), installs each one in clean Ubuntu, Debian, Fedora and Arch
@@ -263,8 +263,8 @@ workflow. It checks installer startup at the default local pipe, the sign-in sho
 on upgrade, and shutdown/shortcut removal on uninstall. Linux native packages include the
 automatically enabled user service; package smoke tests also check the default local socket.
 
-Locally: `scripts/package_linux.sh --version v0.2.0 --arch x86_64 --format portable,deb`
+Locally: `scripts/package_linux.sh --version v0.2.1 --arch x86_64 --format portable,deb`
 (builds NeuroWatch's GStreamer once into `build/gstreamer-sdk`; use a sibling checkout at the
 commit in `neurowatch.ref`, or set `NEUROWATCH_DIR`), and on Windows, from an MSVC
 developer shell with GStreamer's MSVC packages and Inno Setup 6,
-`scripts/package_windows.ps1 -Version v0.2.0` (use `-InnoSetupCompiler` for a custom compiler path).
+`scripts/package_windows.ps1 -Version v0.2.1` (use `-InnoSetupCompiler` for a custom compiler path).
