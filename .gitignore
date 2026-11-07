@@ -1,0 +1,26 @@
+/target/
+/build/
+/dist/
+
+# Local agent/cloud configuration and credentials.
+/.agents/
+/.codex/
+/.aws/
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+/codes.json
+/access-codes.json
+
+# Editor, OS and Python caches.
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+*~
+*.swp
+__pycache__/
+*.py[cod]
+.venv/

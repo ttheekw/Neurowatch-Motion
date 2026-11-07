@@ -1,0 +1,23 @@
+[
+  {
+    "sequence": "pedestrians",
+    "category": "baseline",
+    "url": "https://changedetection.net/static/dataset/baseline/pedestrians.zip",
+    "archive_sha256": "4a8a3d86bbabe78c1dc89e8923dfbe89bb1f9f397d2b4ffbc7e321acee1ecff2",
+    "archive_bytes": 16169008
+  },
+  {
+    "sequence": "canoe",
+    "category": "dynamicBackground",
+    "url": "https://changedetection.net/static/dataset/dynamicBackground/canoe.zip",
+    "archive_sha256": "60f6fca6b03293fb1de81a5ce16167506180395f83a13abd1166c8052b2cea2f",
+    "archive_bytes": 20376755
+  },
+  {
+    "sequence": "peopleInShade",
+    "category": "shadow",
+    "url": "https://changedetection.net/static/dataset/shadow/peopleInShade.zip",
+    "archive_sha256": "ff00999ea02862fa290dabed4bcbeccd2c13e99b05ecfec65aef55eaece495a1",
+    "archive_bytes": 28022604
+  }
+]
