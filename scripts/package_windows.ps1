@@ -17,8 +17,13 @@ $Root = Split-Path -Parent $PSScriptRoot
 
 function Invoke-Native {
     param([string]$Command, [string[]]$Arguments)
-    & $Command @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "$Command failed with exit code $LASTEXITCODE" }
+    $output = @(& $Command @Arguments 2>&1)
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host $_ }
+    if ($exitCode -ne 0) {
+        $tail = ($output | Select-Object -Last 30) -join "`n"
+        throw "$Command failed with exit code ${exitCode}:`n$tail"
+    }
 }
 
 $Version = $Version.TrimStart('v')
