@@ -51,27 +51,38 @@ jobs:
       - name: Install GStreamer (MSVC)
         shell: pwsh
         run: |
-          $ver = "1.28.8"
-          $installer = "gstreamer-1.0-msvc-x86_64-$ver.exe"
-          Invoke-WebRequest "https://gstreamer.freedesktop.org/data/pkg/windows/$ver/msvc/$installer" -OutFile $installer
-          $hash = 'e4c41ee6ee9c6c32a45d198463ec08d79bac3bd5fa58adc93d13fe4a08abc9d9'
-          if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $hash) { throw "Checksum mismatch: $installer" }
-          $gstRoot = 'C:\gstreamer\1.0\msvc_x86_64'
           $log = Join-Path $env:RUNNER_TEMP 'gstreamer-install.log'
-          $p = Start-Process ".\$installer" -Wait -PassThru -ArgumentList @(
-            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/TYPE=devel', "/DIR=$gstRoot", "/LOG=$log")
-          if ($p.ExitCode -ne 0) {
-            if (Test-Path $log) { Get-Content $log -Tail 40 }
-            throw "$installer failed: $($p.ExitCode)"
+          try {
+            $ver = "1.28.8"
+            $installer = "gstreamer-1.0-msvc-x86_64-$ver.exe"
+            Invoke-WebRequest "https://gstreamer.freedesktop.org/data/pkg/windows/$ver/msvc/$installer" -OutFile $installer -MaximumRetryCount 3 -RetryIntervalSec 5
+            $hash = 'e4c41ee6ee9c6c32a45d198463ec08d79bac3bd5fa58adc93d13fe4a08abc9d9'
+            if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $hash) { throw "Checksum mismatch: $installer" }
+            $gstRoot = 'C:\gstreamer\1.0\msvc_x86_64'
+            $log = Join-Path $env:RUNNER_TEMP 'gstreamer-install.log'
+            $p = Start-Process ".\$installer" -Wait -PassThru -ArgumentList @(
+              '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/TYPE=devel', "/DIR=$gstRoot", "/LOG=$log")
+            if ($p.ExitCode -ne 0) {
+              if (Test-Path $log) { Get-Content $log -Tail 40 }
+              throw "$installer failed: $($p.ExitCode)"
+            }
+            foreach ($file in @('bin\gst-launch-1.0.exe', 'bin\gstreamer-1.0-0.dll', 'lib\pkgconfig\gstreamer-1.0.pc',
+                'include\gstreamer-1.0\gst\gst.h', 'lib\gstreamer-1.0\gstlibav.dll')) {
+              if (-not (Test-Path (Join-Path $gstRoot $file))) { throw "GStreamer install lacks $file" }
+            }
+            Write-Host "GStreamer: $gstRoot"
+            echo "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gstRoot" >> $env:GITHUB_ENV
+            echo "PKG_CONFIG_PATH=$gstRoot\lib\pkgconfig" >> $env:GITHUB_ENV
+            echo "$gstRoot\bin" >> $env:GITHUB_PATH
+          } catch {
+            $message = $_.Exception.Message.Replace("`r", '').Replace("`n", '%0A')
+            Write-Host "::error title=GStreamer installation::$message"
+            if (Test-Path $log) {
+              $tail = (Get-Content $log -Tail 40) -join '%0A'
+              Write-Host "::notice title=GStreamer installer log::$tail"
+            }
+            throw
           }
-          foreach ($file in @('bin\gst-launch-1.0.exe', 'bin\gstreamer-1.0-0.dll', 'lib\pkgconfig\gstreamer-1.0.pc',
-              'include\gstreamer-1.0\gst\gst.h', 'lib\gstreamer-1.0\gstlibav.dll')) {
-            if (-not (Test-Path (Join-Path $gstRoot $file))) { throw "GStreamer install lacks $file" }
-          }
-          Write-Host "GStreamer: $gstRoot"
-          echo "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gstRoot" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$gstRoot\lib\pkgconfig" >> $env:GITHUB_ENV
-          echo "$gstRoot\bin" >> $env:GITHUB_PATH
       - uses: dtolnay/rust-toolchain@stable
       - name: Build installer and portable zip
         shell: pwsh
