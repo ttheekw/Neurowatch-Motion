@@ -54,7 +54,10 @@ class LinuxBundlingTests(unittest.TestCase):
         commands = self.work / "bin"
         commands.mkdir()
         cargo = commands / "cargo"
-        cargo.write_text("#!/bin/sh\nexit 0\n")  # The fixture executable is already compiled above.
+        # The fixture executable is already compiled above; this only notes
+        # the library path the build was given.
+        self.build_library_path = self.work / "build-library-path"
+        cargo.write_text('#!/bin/sh\nprintf %s "${LD_LIBRARY_PATH:-}" > "$NW_FIXTURE_BUILD_LIBRARY_PATH"\n')
         cargo.chmod(0o755)
         pkg_config = commands / "pkg-config"
         pkg_config.write_text("#!/bin/sh\ncase \"$*\" in\n"
@@ -63,7 +66,8 @@ class LinuxBundlingTests(unittest.TestCase):
                               "'--modversion glib-2.0') echo 2.70 ;;\n*) exit 1 ;;\nesac\n")
         pkg_config.chmod(0o755)
         self.env = {**os.environ, "PATH": f"{commands}:{os.environ['PATH']}",
-                    "CARGO_TARGET_DIR": str(self.target)}
+                    "CARGO_TARGET_DIR": str(self.target),
+                    "NW_FIXTURE_BUILD_LIBRARY_PATH": str(self.build_library_path)}
         for name in ("NW_MOTION_LENIENT_DEPS", "LD_LIBRARY_PATH", "PKG_CONFIG_PATH"):
             self.env.pop(name, None)
 
@@ -100,6 +104,13 @@ class LinuxBundlingTests(unittest.TestCase):
         shutil.rmtree(self.system)
         bundle = self.assert_bundle_runs(self.package())
         self.assertEqual((bundle / "gstreamer/licenses/orc.txt").read_text(), "SDK ORC license\n")
+
+    def test_the_build_finds_what_the_sdk_libraries_need_themselves(self):
+        # GNU ld (arm64's linker) takes what a linked library needs itself
+        # (GStreamer 1.28's libgstvideo needs libgstallocators) from the
+        # library path, not from -L: without the SDK there, the link fails.
+        self.assert_bundle_runs(self.package())
+        self.assertEqual(self.build_library_path.read_text().split(":")[0], str(self.sdk / "lib"))
 
     def test_missing_system_orc_license_fails_packaging(self):
         self.copyright.unlink()

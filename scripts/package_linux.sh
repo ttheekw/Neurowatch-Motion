@@ -172,7 +172,12 @@ echo "[2/5] Building nw-motion (release)"
 # unlike DT_RUNPATH also serves the libraries and plugins it loads), so the
 # program runs without a launcher script or LD_LIBRARY_PATH.
 export PKG_CONFIG_PATH="$SDK/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+# For the build only, the SDK is on the library path, as in NeuroWatch's own
+# packaging: GNU ld (the linker on arm64) looks there, not in -L, for what a
+# linked library needs itself, and GStreamer 1.28's libgstvideo needs
+# libgstallocators. Without it the link fails with undefined references.
 RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-rpath,\$ORIGIN/../gstreamer/lib -C link-arg=-Wl,--disable-new-dtags" \
+LD_LIBRARY_PATH="$SDK/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
     cargo build --manifest-path "$ROOT/Cargo.toml" --release --locked
 install -m 0755 "${CARGO_TARGET_DIR:-$ROOT/target}/release/nw-motion" "$BUNDLE_DIR/bin/nw-motion"
 ln -s bin/nw-motion "$BUNDLE_DIR/nw-motion"

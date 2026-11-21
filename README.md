@@ -278,14 +278,14 @@ evaluation tool does not change the production detector or its build dependencie
 1. Set the new version in `Cargo.toml` and run `cargo build` (updates `Cargo.lock`).
 2. Pin `neurowatch.ref` to a public NeuroWatch commit containing the GStreamer build
    (`scripts/build_release_gstreamer.sh`). Analytics libraries come from this repo's `vendor/`.
-3. Push, wait for CI, then tag: `git tag v0.2.2 && git push origin v0.2.2`.
+3. Push, wait for CI, then tag: `git tag v0.2.3 && git push origin v0.2.3`.
 
 Pushing `main` or opening a pull request runs source checks and tests. Downloadable executables,
 installers and Linux packages are built and published **only when a version tag is pushed**
-(for example, `v0.2.2`). Normal branch pushes do not produce downloadable packages.
+(for example, `v0.2.3`). Normal branch pushes do not produce downloadable packages.
 
 To try the packaging without releasing, run the workflow by hand: **Actions → Release → Run
-workflow**, choose the branch and, if you like, enter a version such as `v0.2.2-rc.1` (left
+workflow**, choose the branch and, if you like, enter a version such as `v0.2.3-rc.1` (left
 empty, it is the one in `Cargo.toml`). It builds and checks every package exactly as a tag
 does and publishes nothing: the packages stay on the run's page as artifacts.
 
@@ -303,8 +303,8 @@ The [Windows workflow](.github/workflows/windows.yml) is called only by the rele
 on upgrade, and shutdown/shortcut removal on uninstall. Linux native packages include the
 automatically enabled user service; package smoke tests also check the default local socket.
 
-Locally: `scripts/package_linux.sh --version v0.2.2 --arch x86_64 --format portable,deb`
+Locally: `scripts/package_linux.sh --version v0.2.3 --arch x86_64 --format portable,deb`
 (builds NeuroWatch's GStreamer once into `build/gstreamer-sdk`; use a sibling checkout at the
 commit in `neurowatch.ref`, or set `NEUROWATCH_DIR`), and on Windows, from an MSVC
 developer shell with GStreamer's MSVC packages and Inno Setup 6,
-`scripts/package_windows.ps1 -Version v0.2.2` (use `-InnoSetupCompiler` for a custom compiler path).
+`scripts/package_windows.ps1 -Version v0.2.3` (use `-InnoSetupCompiler` for a custom compiler path).

@@ -113,11 +113,19 @@ jobs:
           NEUROWATCH_DIR: ${{ github.workspace }}/Neurowatch
           RELEASE_VERSION: ${{ needs.version.outputs.tag }}
         run: |
-          scripts/package_linux.sh \
-            --version "$RELEASE_VERSION" \
-            --arch "${{ matrix.arch }}" \
-            --format "${{ matrix.formats }}" \
-            --out-dir dist/release
+          # A failure's last lines also become an annotation on the run's
+          # page (readable without signing in), as the Windows workflow does.
+          set -o pipefail
+          if ! scripts/package_linux.sh \
+              --version "$RELEASE_VERSION" \
+              --arch "${{ matrix.arch }}" \
+              --format "${{ matrix.formats }}" \
+              --out-dir dist/release 2>&1 | tee "$RUNNER_TEMP/package.log"; then
+            message="$(tail -n 25 "$RUNNER_TEMP/package.log" | cut -c1-300 \
+              | sed -e 's/%/%25/g' | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/%0A/g')"
+            echo "::error title=Linux packaging (${{ matrix.arch }})::$message"
+            exit 1
+          fi
       - name: Check the portable bundle
         working-directory: Neurowatch-Motion
         run: |
