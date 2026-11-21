@@ -1,10 +1,18 @@
 name: Release
 
 # Pushing a v* version tag builds, checks and publishes every release package.
+# A manual run builds and checks the same packages and publishes nothing: they
+# stay on the run's page as artifacts.
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Test build version, for example v0.1.0-rc.1 (default: the version in Cargo.toml). Nothing is published.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -26,12 +34,20 @@ jobs:
       - name: Included analytics libraries match vendor/sources.sha256
         run: sha256sum --check --strict vendor/sources.sha256
       - id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          tag="$GITHUB_REF_NAME"
+          cargo_version="$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -n 1)"
+          # A pushed tag is the version. A manual run takes the one entered,
+          # else Cargo.toml's (its ref is a branch, not a version).
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag="${INPUT_VERSION:-v$cargo_version}"
+          fi
           [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]] || {
             echo 'Expected vMAJOR.MINOR.PATCH, optionally followed by -rc.1'; exit 1;
           }
-          cargo_version="$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -n 1)"
           base="${tag#v}"
           [[ "${base%%-*}" == "$cargo_version" ]] || {
             echo "::error::Tag $tag does not match Cargo.toml version $cargo_version"; exit 1;
@@ -131,16 +147,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {image: 'ubuntu:22.04', format: deb, arch: x86_64, runner: ubuntu-24.04}
-          - {image: 'ubuntu:24.04', format: deb, arch: x86_64, runner: ubuntu-24.04}
-          - {image: 'debian:12', format: deb, arch: x86_64, runner: ubuntu-24.04}
-          - {image: 'debian:13', format: deb, arch: x86_64, runner: ubuntu-24.04}
-          - {image: 'fedora:43', format: rpm, arch: x86_64, runner: ubuntu-24.04}
-          - {image: 'archlinux:base', format: arch, arch: x86_64, runner: ubuntu-24.04}
-          - {image: 'ubuntu:22.04', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
-          - {image: 'debian:12', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
-          - {image: 'debian:13', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
-          - {image: 'fedora:43', format: rpm, arch: arm64, runner: ubuntu-24.04-arm}
+          - {image: 'ubuntu:22.04', digest: 'sha256:f64b2ffc2f10ab8f8505aa56b2664bd846cbb9df87c7e2532e30f7667021c0e6', format: deb, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'ubuntu:24.04', digest: 'sha256:9c7f200c07e3d4a03e7249d2c16bf66a51120fb876aa2242cf31451412543289', format: deb, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'debian:12', digest: 'sha256:268fb24c39bca92d326dd83ea3abebe4a3f7751c804ffef23bb6d857dd343ff8', format: deb, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'debian:13', digest: 'sha256:9c6e381421d0f48d1b8133e573f33c185ee16cbf505eda9c4a8a4791b25ea8a6', format: deb, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'fedora:43', digest: 'sha256:f01112b9a1f1d0504ad962d9adfa401425033f8ab067e0a821904ebdde5b8ca5', format: rpm, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'archlinux:base', digest: 'sha256:d4594bb2300cba11f41c2f27923eb56f63d9988909c402f9c95517d1e362c899', format: arch, arch: x86_64, runner: ubuntu-24.04}
+          - {image: 'ubuntu:22.04', digest: 'sha256:f64b2ffc2f10ab8f8505aa56b2664bd846cbb9df87c7e2532e30f7667021c0e6', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
+          - {image: 'debian:12', digest: 'sha256:268fb24c39bca92d326dd83ea3abebe4a3f7751c804ffef23bb6d857dd343ff8', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
+          - {image: 'debian:13', digest: 'sha256:9c6e381421d0f48d1b8133e573f33c185ee16cbf505eda9c4a8a4791b25ea8a6', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
+          - {image: 'fedora:43', digest: 'sha256:f01112b9a1f1d0504ad962d9adfa401425033f8ab067e0a821904ebdde5b8ca5', format: rpm, arch: arm64, runner: ubuntu-24.04-arm}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
@@ -149,7 +165,9 @@ jobs:
           path: dist/release
       - name: Install, check, serve and remove in a clean distribution
         env:
-          IMAGE: ${{ matrix.image }}
+          # The tag is for reading; the digest (the multi-architecture index)
+          # is what is pulled. Refresh both together.
+          IMAGE: ${{ matrix.image }}@${{ matrix.digest }}
           FORMAT: ${{ matrix.format }}
         run: |
           docker run --rm -v "$PWD:/work:ro" "$IMAGE" \
@@ -158,10 +176,13 @@ jobs:
   publish:
     name: Publish GitHub Release
     needs: [version, package-linux, package-windows, install-linux]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      # Keyless signing of SHA256SUMS (Sigstore, GitHub's OIDC token). Only
+      # this job gets it.
+      id-token: write
     steps:
       - name: Gather the packages
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
@@ -199,6 +220,17 @@ jobs:
         run: |
           find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | sort | xargs sha256sum > SHA256SUMS
           cat SHA256SUMS
+      # SHA256SUMS lists every package, so one signature covers them all. The
+      # certificate names this workflow and the release tag; nothing to keep
+      # secret. How to check it: README.md ("Check a download").
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      - name: Sign SHA256SUMS (keyless)
+        working-directory: dist/release
+        run: |
+          set -euo pipefail
+          cosign sign-blob --yes --bundle SHA256SUMS.sigstore.json SHA256SUMS
+          test -s SHA256SUMS.sigstore.json
       - name: Create the release and upload the packages
         env:
           GH_TOKEN: ${{ github.token }}
