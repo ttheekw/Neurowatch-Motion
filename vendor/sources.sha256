@@ -24,3 +24,4 @@ d2cb38e134fffba2b123decefa79105133e80e86a0afca7482ab54b1d8da0706  vendor/nw-anal
 8e55a4e0b4eb37e2f6dab3710e6f46fca609e3d548f6e1ba0fcb21fe243a037c  vendor/nw-analytics-sdk/src/web.rs
 926e5b2c86dca40aae23f7230670a074f1decf8787dc2cf2cd2c291b66767e1c  vendor/nw-service-protocol/Cargo.toml
 6e86719a8088019b6608186ca5ddab2a5261795c5ead91a314c5a0d327f92a4f  vendor/nw-service-protocol/src/lib.rs
+1dbb57e7e750cfa5b7848120e6d2257fa0d0005557a2c21b003ce982b5577811  vendor/nw-service-protocol/fixtures/service-tokens-v1.json

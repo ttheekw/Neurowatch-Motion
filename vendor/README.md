@@ -7,8 +7,9 @@ commit `eeddef965d6a486be14151b79d9e34680d04f514`
 (https://github.com/ttheekw/Neurowatch/tree/eeddef965d6a486be14151b79d9e34680d04f514/crates).
 They use NeuroWatch's Apache-2.0 license.
 
-Only each crate's `Cargo.toml` and library `src/` files are included; NeuroWatch's
-Python bridge executable, tests and fixtures are left out. The manifests write out
+Only each crate's `Cargo.toml`, library `src/` files and the files those sources embed
+(`include_str!`, such as the fixture a built-in test reads) are included; NeuroWatch's
+Python bridge executable and its other tests and fixtures are left out. The manifests write out
 NeuroWatch's workspace inheritance as explicit package and dependency values; the
 library sources are unchanged. `sources.sha256` records them and the manifests, and CI and the release build check it.
 
