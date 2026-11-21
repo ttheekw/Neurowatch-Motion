@@ -1,13 +1,14 @@
 [package]
 name = "nw-analytics-sdk"
 description = "Transport and local picture sharing for NeuroWatch analytics daemons"
-version = "0.1.6"
+version = "0.1.10"
 edition = "2021"
 authors = ["Neurowatch Contributors"]
 license = "Apache-2.0"
 repository = "https://github.com/ttheekw/Neurowatch"
 publish = false
-rust-version = "1.75"
+rust-version = "1.88"
+
 [dependencies]
 nw-analytics-protocol = { path = "../nw-analytics-protocol" }
 serde = { version = "1", features = ["derive"] }
@@ -18,6 +19,7 @@ getrandom = { version = "0.2", features = ["std"] }
 libc = "0.2"
 subtle = "2.6"
 tokio = { version = "1", features = ["full"] }
+nw-service-protocol = { path = "../nw-service-protocol" }
 ed25519-dalek = { version = "=2.1.1", default-features = false, features = ["std"] }
 sha2 = "0.10"
 quinn = { version = "0.11", default-features = false, features = ["runtime-tokio", "rustls-ring"] }

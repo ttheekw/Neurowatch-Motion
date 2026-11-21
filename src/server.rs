@@ -145,6 +145,7 @@ fn serve_inner<R: Read, W: Write + Send + 'static>(
         heard_ms: AtomicU64::new(0),
         ended: AtomicBool::new(false),
         admission: Mutex::new(None),
+        authorized: AtomicBool::new(false),
     });
     if let Err(error) = watch.spawn(options.silence_limit, capabilities.close.clone()) {
         tracing::error!(%error, "Could not watch the session");
@@ -193,6 +194,7 @@ fn serve_inner<R: Read, W: Write + Send + 'static>(
         }
     }
     watch.end();
+    watch.signed_in(); // no longer waiting, whatever happened
     let bound = session.workers.len();
     session.workers.clear();
     tracing::info!(bound, "NeuroWatch disconnected");
@@ -207,12 +209,41 @@ struct Watch {
     heard_ms: AtomicU64,
     ended: AtomicBool,
     admission: Mutex<Option<Admission>>,
+    /// Signed in (`authenticate` accepted).
+    authorized: AtomicBool,
+}
+
+/// Sessions served at once, sessions not signed in yet, and how long one may
+/// take to sign in. Without them anyone who could reach the address kept as
+/// many sessions as they liked by pinging, until file handles or threads ran
+/// out and an accept error ended the daemon (vulnerability checklist R12).
+const MAX_SESSIONS: usize = 256;
+const MAX_UNAUTHENTICATED: usize = 32;
+const AUTHENTICATE_WITHIN: Duration = Duration::from_secs(15);
+static SESSIONS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+static UNAUTHENTICATED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+fn release(counter: &std::sync::atomic::AtomicUsize) {
+    let mut now = counter.load(Ordering::Acquire);
+    while now > 0 {
+        match counter.compare_exchange(now, now - 1, Ordering::AcqRel, Ordering::Acquire) {
+            Ok(_) => return,
+            Err(seen) => now = seen,
+        }
+    }
 }
 
 impl Watch {
     fn heard(&self) {
         self.heard_ms
             .store(self.start.elapsed().as_millis() as u64, Ordering::Release);
+    }
+
+    /// Signed in: no longer counted as waiting to.
+    fn signed_in(&self) {
+        if !self.authorized.swap(true, Ordering::AcqRel) {
+            release(&UNAUTHENTICATED);
+        }
     }
 
     fn end(&self) {
@@ -238,11 +269,15 @@ impl Watch {
                     .admission
                     .lock()
                     .is_ok_and(|a| a.as_ref().is_some_and(Admission::revoked));
-                if silent < silence && !revoked {
+                let late = !watch.authorized.load(Ordering::Acquire)
+                    && watch.start.elapsed() >= AUTHENTICATE_WITHIN;
+                if silent < silence && !revoked && !late {
                     continue;
                 }
                 if revoked {
                     tracing::info!("Access code revoked; closing the connection");
+                } else if late {
+                    tracing::info!("The peer did not sign in; closing the connection");
                 } else {
                     tracing::info!(
                         silent_s = silent.as_secs(),
@@ -328,6 +363,7 @@ impl Session {
                     }
                 }
                 self.authorized = true;
+                self.watch.signed_in();
                 self.authorized_node = Some(auth.public_key);
                 Ok(json!({"authorized":true}))
             }
@@ -615,7 +651,13 @@ pub fn listen_with_identity(
                 .ok_or_else(|| anyhow::anyhow!("Plugin hostname has no address"))?;
             let listener = nw_analytics_sdk::tls::Listener::bind(address, &identity)?;
             loop {
-                let io = listener.accept()?;
+                let io = match listener.accept() {
+                    Ok(io) => io,
+                    Err(error) => {
+                        accept_failed(&error);
+                        continue;
+                    }
+                };
                 let identity = Arc::clone(&identity);
                 let access = Arc::clone(&access);
                 spawn(move || {
@@ -645,7 +687,13 @@ pub fn listen_with_identity(
                 .ok_or_else(|| anyhow::anyhow!("Plugin hostname has no address"))?;
             let listener = nw_analytics_sdk::quic::Listener::bind(address, &identity)?;
             loop {
-                let io = listener.accept()?;
+                let io = match listener.accept() {
+                    Ok(io) => io,
+                    Err(error) => {
+                        accept_failed(&error);
+                        continue;
+                    }
+                };
                 let identity = Arc::clone(&identity);
                 let access = Arc::clone(&access);
                 spawn(move || {
@@ -691,7 +739,13 @@ pub fn listen_with_identity(
             std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
             tracing::info!(%address, "Listening for NeuroWatch");
             for conn in listener.incoming() {
-                let conn = conn?;
+                let conn = match conn {
+                    Ok(conn) => conn,
+                    Err(error) => {
+                        accept_failed(&error);
+                        continue;
+                    }
+                };
                 let identity = Arc::clone(&identity);
                 let access = Arc::clone(&access);
                 spawn(move || {
@@ -723,7 +777,13 @@ pub fn listen_with_identity(
             let mut listener = nw_analytics_sdk::pipe::Listener::bind(name)?;
             tracing::info!(%address, "Listening for NeuroWatch");
             loop {
-                let pipe = listener.accept()?;
+                let pipe = match listener.accept() {
+                    Ok(pipe) => pipe,
+                    Err(error) => {
+                        accept_failed(&error);
+                        continue;
+                    }
+                };
                 let identity = Arc::clone(&identity);
                 let access = Arc::clone(&access);
                 spawn(move || {
@@ -751,9 +811,17 @@ pub fn listen_with_identity(
             let listener = std::net::TcpListener::bind(socket)?;
             tracing::info!(%address, "Listening for NeuroWatch");
             for conn in listener.incoming() {
-                let conn = conn?;
-                conn.set_nodelay(true)?;
-                let reader = conn.try_clone()?;
+                let conn = match conn {
+                    Ok(conn) => conn,
+                    Err(error) => {
+                        accept_failed(&error);
+                        continue;
+                    }
+                };
+                let _ = conn.set_nodelay(true);
+                let Ok(reader) = conn.try_clone() else {
+                    continue;
+                };
                 let close = shutdown_on_tcp_close(&conn);
                 let identity = Arc::clone(&identity);
                 let access = Arc::clone(&access);
@@ -792,9 +860,81 @@ fn shutdown_on_tcp_close(socket: &std::net::TcpStream) -> Option<Closer> {
     })
 }
 
+/// Serve a connection on its own thread, unless the daemon already serves
+/// as many as it may (the connection is then closed). Never an error: a
+/// failed spawn drops this connection and the listener goes on.
 fn spawn(serve: impl FnOnce() + Send + 'static) -> io::Result<()> {
-    std::thread::Builder::new()
+    if SESSIONS.load(Ordering::Acquire) >= MAX_SESSIONS
+        || UNAUTHENTICATED.load(Ordering::Acquire) >= MAX_UNAUTHENTICATED
+    {
+        tracing::warn!("Too many connections; refusing one");
+        return Ok(());
+    }
+    SESSIONS.fetch_add(1, Ordering::AcqRel);
+    UNAUTHENTICATED.fetch_add(1, Ordering::AcqRel);
+    let started = std::thread::Builder::new()
         .name("session".into())
-        .spawn(serve)
-        .map(|_| ())
+        .spawn(move || {
+            serve();
+            release(&SESSIONS);
+        });
+    if let Err(error) = started {
+        tracing::warn!(%error, "Could not start a session; refusing the connection");
+        release(&SESSIONS);
+        release(&UNAUTHENTICATED);
+    }
+    Ok(())
+}
+
+/// An accept that failed (out of file handles, a peer gone): wait a little
+/// and go on. Returning the error ended the daemon for every recorder.
+fn accept_failed(error: &dyn std::fmt::Display) {
+    tracing::warn!(%error, "Accepting a connection failed; going on");
+    std::thread::sleep(Duration::from_millis(200));
+}
+
+#[cfg(test)]
+mod limit_tests {
+    use super::*;
+
+    /// Vulnerability checklist R12: a peer that never signs in is closed.
+    #[test]
+    fn a_session_that_does_not_sign_in_is_closed() {
+        let closed = Arc::new(AtomicBool::new(false));
+        let watch = Arc::new(Watch {
+            start: Instant::now()
+                .checked_sub(AUTHENTICATE_WITHIN + Duration::from_secs(1))
+                .expect("a moment ago"),
+            heard_ms: AtomicU64::new(u64::MAX / 2),
+            ended: AtomicBool::new(false),
+            admission: Mutex::new(None),
+            authorized: AtomicBool::new(false),
+        });
+        let flag = Arc::clone(&closed);
+        watch
+            .spawn(
+                Duration::from_secs(60),
+                closer(move || flag.store(true, Ordering::Release)),
+            )
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !closed.load(Ordering::Acquire) && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        assert!(closed.load(Ordering::Acquire), "closed for not signing in");
+    }
+
+    /// Vulnerability checklist R12: past the limits a connection is refused,
+    /// not served, and the listener is not ended by it.
+    #[test]
+    fn connections_past_the_limit_are_refused() {
+        let before = UNAUTHENTICATED.swap(MAX_UNAUTHENTICATED, Ordering::AcqRel);
+        let served = Arc::new(AtomicBool::new(false));
+        let flag = Arc::clone(&served);
+        let outcome = spawn(move || flag.store(true, Ordering::Release));
+        UNAUTHENTICATED.store(before, Ordering::Release);
+        assert!(outcome.is_ok(), "never an error for the listener");
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(!served.load(Ordering::Acquire), "refused");
+    }
 }

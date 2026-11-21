@@ -78,11 +78,17 @@ followed by `systemctl --user start nw-motion.service` restores it. On Windows, 
 ### Remote mode (optional)
 
 On the remote computer, run a separate daemon with an explicit network listener (open UDP
-port 7690, or TCP for `tls:`), and give it its own persistent identity:
+port 7690, or TCP for `tls:`), give it its own persistent identity and an access code file (see
+[Access codes](#access-codes)):
 
 ```sh
-nw-motion --listen quic:0.0.0.0:7690 --identity ~/.local/state/nw-motion/remote.key
+nw-motion --listen quic:0.0.0.0:7690 --identity ~/.local/state/nw-motion/remote.key \
+    --access-codes ~/.local/state/nw-motion/codes.json
 ```
+
+A recorder needs nothing but the address to use the daemon (it proves only its own key), so on an
+address other machines can reach the daemon refuses to start without `--access-codes`. Add
+`--open` to serve every recorder that connects instead.
 
 In NeuroWatch open **Plugins → Add Plugin → URL**, enter `quic://that-computer:7690`, check that
 the fingerprint shown matches the one the daemon logs, and approve it. Then bind cameras on the
@@ -112,10 +118,12 @@ cargo build --release --locked
 target/release/nw-motion --check
 # Default: private Unix socket, or local Windows named pipe.
 target/release/nw-motion
-# Remote encrypted transport with a persistent identity:
-target/release/nw-motion --listen quic:0.0.0.0:7690 --identity /private/path/motion.key
+# Remote encrypted transport with a persistent identity (and access codes, or --open):
+target/release/nw-motion --listen quic:0.0.0.0:7690 --identity /private/path/motion.key \
+    --access-codes /private/path/codes.json
 # Encrypted fallback when UDP is blocked:
-target/release/nw-motion --listen tls:0.0.0.0:7690 --identity /private/path/motion.key
+target/release/nw-motion --listen tls:0.0.0.0:7690 --identity /private/path/motion.key \
+    --access-codes /private/path/codes.json
 # Loopback development:
 target/release/nw-motion --listen tcp:127.0.0.1:7690
 ```
@@ -145,8 +153,11 @@ CPU/decoder capacity; callbacks and media are bounded.
 
 ## Access codes
 
-Without a code file, every recorder you approve may use the daemon. To admit only recorders
-that know a code, and only so many at a time, write a code file and start the daemon with it:
+Without a code file, every recorder that reaches the daemon may use it: the recorder approves
+the plugin's key, but the plugin does not approve recorders. That is fine for the local socket
+(this user only); on a network address the daemon needs `--access-codes`, or `--open` to say
+that everyone is welcome. To admit only recorders that know a code, and only so many at a time,
+write a code file and start the daemon with it:
 
 ```sh
 target/release/nw-motion access-codes add /private/path/codes.json site-a --max-connections 10
@@ -175,6 +186,9 @@ the plugin's page and tries again every 2 s, so it gets in once a place is free.
   everyone.
 - **Lost recorders give their place back.** NeuroWatch pings every 5 s; a connection silent for
   15 s (a lost network can leave one open for minutes) is closed and its place freed.
+- **Guessing is slowed.** After 5 wrong codes within a minute, each further refusal is answered
+  250 ms later than the one before (at most 5 s), whoever sends it. A correct code is never
+  delayed.
 - **Restarts start from zero.** Places are kept in memory only: after a restart every recorder
   reconnects within seconds and is counted again. If more recorders share a code than its
   limit, which of them get in after a restart is first come, first served.

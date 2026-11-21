@@ -1,13 +1,14 @@
 [package]
 name        = "nw-analytics-protocol"
 description = "The protocol between a NeuroWatch node and analytics plugin daemons"
-version = "0.1.6"
+version = "0.1.10"
 edition = "2021"
 authors = ["Neurowatch Contributors"]
 license = "Apache-2.0"
 repository = "https://github.com/ttheekw/Neurowatch"
 publish = false
-rust-version = "1.75"
+rust-version = "1.88"
+
 # Plugins in other repositories depend on this crate by path or git: keep
 # its dependencies few and free of NeuroWatch's own crates.
 [dependencies]

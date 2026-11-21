@@ -152,12 +152,12 @@ impl Detector {
         if score >= self.min_area && !blocks.is_empty() {
             let candidate = *self.candidate_ms.get_or_insert(now_ms);
             self.last_motion_ms = now_ms;
-            if now_ms - candidate >= self.duration_ms {
+            if now_ms.saturating_sub(candidate) >= self.duration_ms {
                 self.active = true;
             }
         } else {
             self.candidate_ms = None;
-            if self.active && now_ms - self.last_motion_ms >= self.cooldown_ms {
+            if self.active && now_ms.saturating_sub(self.last_motion_ms) >= self.cooldown_ms {
                 self.active = false;
             }
         }
@@ -307,5 +307,14 @@ mod tests {
         detector.observe(&frame(false), 100).unwrap();
         assert!(detector.observe(&frame(true), 99).is_err());
         assert!(!detector.observe(&frame(false), 200).unwrap().active);
+    }
+
+    #[test]
+    fn extreme_timestamps_do_not_overflow() {
+        let mut detector = Detector::new(&config());
+        detector.observe(&frame(false), i64::MIN).unwrap();
+        detector.observe(&frame(true), i64::MIN + 1).unwrap();
+        detector.observe(&frame(true), i64::MAX).unwrap();
+        detector.observe(&frame(false), i64::MAX).unwrap();
     }
 }

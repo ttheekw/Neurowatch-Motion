@@ -181,11 +181,14 @@ impl RateLimit {
             Some(next) if !new_timeline => {
                 // On schedule, so 25 fps becomes a steady 5; far later (a gap)
                 // starts the schedule again from this picture.
-                self.next_ns = Some((next + self.interval_ns).max(pts_ns + self.interval_ns / 2));
+                self.next_ns = Some(
+                    next.saturating_add(self.interval_ns)
+                        .max(pts_ns.saturating_add(self.interval_ns / 2)),
+                );
                 true
             }
             _ => {
-                self.next_ns = Some(pts_ns + self.interval_ns);
+                self.next_ns = Some(pts_ns.saturating_add(self.interval_ns));
                 true
             }
         }
@@ -399,12 +402,18 @@ impl Decoder {
                     continue;
                 }
                 let stride = usize::try_from(info.stride()[i])?;
-                for row in 0..rows {
-                    let destination = info.offset()[i] + row * stride;
-                    map[destination..destination + width]
-                        .copy_from_slice(&picture.data[start..start + width]);
-                    start += width;
-                }
+                let offset = *info
+                    .offset()
+                    .get(i)
+                    .ok_or_else(|| anyhow::anyhow!("raw picture has no plane {i}"))?;
+                copy_rows(
+                    &picture.data,
+                    (start, width),
+                    &mut map,
+                    (offset, stride),
+                    (width, rows),
+                )?;
+                start += width * rows;
             }
         }
         self.remember(pts, picture.identity);
@@ -430,10 +439,7 @@ impl Decoder {
         let stride = usize::try_from(frame.plane_stride()[0])?;
         let plane = frame.plane_data(0)?;
         let mut pixels = vec![0u8; WIDTH * HEIGHT];
-        for row in 0..HEIGHT {
-            pixels[row * WIDTH..(row + 1) * WIDTH]
-                .copy_from_slice(&plane[row * stride..row * stride + WIDTH]);
-        }
+        copy_rows(plane, (0, stride), &mut pixels, (0, WIDTH), (WIDTH, HEIGHT))?;
         let identity = buffer
             .pts()
             .and_then(|pts| self.identities.lock().ok()?.get(&pts.nseconds()).copied());
@@ -917,6 +923,33 @@ impl Run {
     }
 }
 
+/// Copy `rows` rows of `width` bytes between two strided buffers; `source` and
+/// `destination` are `(first byte, row stride)`. A picture whose declared
+/// shape does not fit its bytes is an error, never an out-of-range panic.
+fn copy_rows(
+    source: &[u8],
+    (source_start, source_stride): (usize, usize),
+    destination: &mut [u8],
+    (destination_start, destination_stride): (usize, usize),
+    (width, rows): (usize, usize),
+) -> anyhow::Result<()> {
+    for row in 0..rows {
+        let from = row
+            .checked_mul(source_stride)
+            .and_then(|at| at.checked_add(source_start))
+            .and_then(|at| source.get(at..at.checked_add(width)?));
+        let to = row
+            .checked_mul(destination_stride)
+            .and_then(|at| at.checked_add(destination_start))
+            .and_then(|at| destination.get_mut(at..at.checked_add(width)?));
+        match (from, to) {
+            (Some(from), Some(to)) => to.copy_from_slice(from),
+            _ => anyhow::bail!("picture rows do not fit their buffer"),
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod rate_tests {
     use super::RateLimit;
@@ -950,5 +983,41 @@ mod rate_tests {
         assert!(limit.admit(0));
         assert!(!limit.admit(40_000_000));
         assert!(limit.admit(200_000_000));
+    }
+}
+
+#[cfg(test)]
+mod shape_tests {
+    use super::copy_rows;
+
+    #[test]
+    fn rows_are_copied_between_strides() {
+        let source = [1, 2, 3, 0, 4, 5, 6, 0];
+        let mut packed = [0u8; 6];
+        copy_rows(&source, (0, 4), &mut packed, (0, 3), (3, 2)).unwrap();
+        assert_eq!(packed, [1, 2, 3, 4, 5, 6]);
+    }
+
+    #[test]
+    fn a_picture_shorter_than_its_shape_is_refused_not_a_panic() {
+        let mut destination = [0u8; 64];
+        assert!(copy_rows(&[1, 2, 3], (0, 4), &mut destination, (0, 4), (4, 4)).is_err());
+        assert!(copy_rows(&[0; 64], (0, 4), &mut destination[..6], (0, 4), (4, 4)).is_err());
+        assert!(copy_rows(&[0; 64], (usize::MAX, 4), &mut destination, (0, 4), (4, 2)).is_err());
+        assert!(copy_rows(&[0; 64], (0, usize::MAX), &mut destination, (0, 4), (4, 2)).is_err());
+    }
+}
+
+#[cfg(test)]
+mod timeline_tests {
+    use super::RateLimit;
+
+    #[test]
+    fn extreme_timestamps_do_not_overflow() {
+        let mut limit = RateLimit::new(5);
+        limit.admit(0);
+        limit.admit(u64::MAX - 1);
+        limit.admit(u64::MAX);
+        limit.admit(0);
     }
 }

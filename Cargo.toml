@@ -8,7 +8,7 @@ publish      = false
 description  = "NeuroWatch motion detection analytics plugin daemon"
 
 [workspace]
-members = ["vendor/nw-analytics-protocol", "vendor/nw-analytics-sdk"]
+members = ["vendor/nw-analytics-protocol", "vendor/nw-analytics-sdk", "vendor/nw-service-protocol"]
 default-members = ["."]
 resolver = "2"
 

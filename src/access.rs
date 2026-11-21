@@ -31,7 +31,7 @@ use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Most codes one file may hold.
 pub const MAX_CODES: usize = 1024;
@@ -240,6 +240,40 @@ pub struct Access {
     /// The code file (`None`: no list, every node is served).
     path: Option<PathBuf>,
     state: Mutex<State>,
+    throttle: Mutex<Throttle>,
+}
+
+/// Refusals within [`FAILURE_WINDOW`] answered at once.
+pub const FREE_FAILURES: u32 = 5;
+/// A refusal count older than this is forgotten.
+pub const FAILURE_WINDOW: Duration = Duration::from_secs(60);
+/// Added wait per refusal beyond [`FREE_FAILURES`].
+pub const FAILURE_STEP: Duration = Duration::from_millis(250);
+/// Longest wait before a refusal is answered.
+pub const MAX_FAILURE_DELAY: Duration = Duration::from_secs(5);
+
+/// Counts recent wrong codes.
+#[derive(Debug, Default)]
+struct Throttle {
+    count: u32,
+    last: Option<Instant>,
+}
+
+impl Throttle {
+    /// Record a refusal at `now`; how long to wait before answering it.
+    fn failed(&mut self, now: Instant) -> Duration {
+        if self
+            .last
+            .is_none_or(|last| now.saturating_duration_since(last) > FAILURE_WINDOW)
+        {
+            self.count = 0;
+        }
+        self.last = Some(now);
+        self.count = self.count.saturating_add(1);
+        FAILURE_STEP
+            .saturating_mul(self.count.saturating_sub(FREE_FAILURES))
+            .min(MAX_FAILURE_DELAY)
+    }
 }
 
 #[derive(Debug, Default)]
@@ -301,6 +335,7 @@ impl Access {
         let access = Self {
             path: Some(path.to_owned()),
             state: Mutex::default(),
+            throttle: Mutex::default(),
         };
         let bytes = read_bounded(path)?;
         let table = parse_bytes(&bytes).map_err(|e| anyhow::anyhow!("{}: {e}", path.display()))?;
@@ -363,7 +398,27 @@ impl Access {
     }
 
     /// Admit a node that sent `credential`, taking a place under its code.
+    ///
+    /// Wrong codes slow down: after [`FREE_FAILURES`] refusals within
+    /// [`FAILURE_WINDOW`] each further one waits (up to [`MAX_FAILURE_DELAY`])
+    /// before it is answered, so guessing costs time as well as one PBKDF2 run
+    /// per try. A correct code is never delayed. The session has no peer
+    /// address, so the count is the daemon's, not one peer's.
     pub fn admit(self: &Arc<Self>, credential: Option<&str>) -> Result<Admission, Denied> {
+        let result = self.admit_unthrottled(credential);
+        if matches!(result, Err(Denied::Code)) {
+            let delay = self
+                .throttle
+                .lock()
+                .map_or(MAX_FAILURE_DELAY, |mut t| t.failed(Instant::now()));
+            if !delay.is_zero() {
+                std::thread::sleep(delay);
+            }
+        }
+        result
+    }
+
+    fn admit_unthrottled(self: &Arc<Self>, credential: Option<&str>) -> Result<Admission, Denied> {
         let credential = credential.unwrap_or("");
         let key: [u8; 32] = digest::digest(&digest::SHA256, credential.as_bytes())
             .as_ref()
@@ -577,6 +632,23 @@ mod tests {
         drop(first);
         assert_eq!(access.holding("site-a"), 1);
         assert!(access.admit(Some("alpha-secret")).is_ok());
+    }
+
+    #[test]
+    fn wrong_codes_slow_down_and_are_forgotten() {
+        let start = Instant::now();
+        let mut throttle = Throttle::default();
+        for _ in 0..FREE_FAILURES {
+            assert_eq!(throttle.failed(start), Duration::ZERO);
+        }
+        assert_eq!(throttle.failed(start), FAILURE_STEP);
+        assert_eq!(throttle.failed(start), FAILURE_STEP * 2);
+        for _ in 0..100 {
+            throttle.failed(start);
+        }
+        assert_eq!(throttle.failed(start), MAX_FAILURE_DELAY);
+        let later = start + FAILURE_WINDOW + Duration::from_secs(1);
+        assert_eq!(throttle.failed(later), Duration::ZERO);
     }
 
     #[test]

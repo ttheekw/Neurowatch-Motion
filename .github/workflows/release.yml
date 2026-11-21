@@ -20,7 +20,11 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       neurowatch-ref: ${{ steps.neurowatch.outputs.ref }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # A release builds only the library sources recorded in vendor/sources.sha256
+      # (each crate's sources and Cargo.toml); an edit not recorded stops it here.
+      - name: Included analytics libraries match vendor/sources.sha256
+        run: sha256sum --check --strict vendor/sources.sha256
       - id: version
         run: |
           tag="$GITHUB_REF_NAME"
@@ -59,10 +63,10 @@ jobs:
             runner: ubuntu-22.04-arm
             formats: portable,deb,rpm
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: Neurowatch-Motion
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: ttheekw/Neurowatch
           ref: ${{ needs.version.outputs.neurowatch-ref }}
@@ -80,11 +84,13 @@ jobs:
             libsoup-3.0-0 glib-networking \
             rpm libarchive-tools zstd dpkg-dev binutils
       - name: Restore the GStreamer build
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: Neurowatch-Motion/build/gstreamer-sdk
           key: gstreamer-sdk-${{ matrix.runner }}-${{ hashFiles('Neurowatch/scripts/build_release_gstreamer.sh', 'Neurowatch/scripts/packaging/media-sources.sha256') }}
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
       - name: Build packages
         working-directory: Neurowatch-Motion
         env:
@@ -103,7 +109,7 @@ jobs:
           tar -xzf dist/release/nw-motion-*-linux-*.tar.gz -C "$RUNNER_TEMP/portable"
           env -u GST_PLUGIN_PATH -u GST_PLUGIN_SYSTEM_PATH \
             "$RUNNER_TEMP/portable/nw-motion/nw-motion" --check
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: release-linux-${{ matrix.arch }}
           path: Neurowatch-Motion/dist/release/*
@@ -136,8 +142,8 @@ jobs:
           - {image: 'debian:13', format: deb, arch: arm64, runner: ubuntu-24.04-arm}
           - {image: 'fedora:43', format: rpm, arch: arm64, runner: ubuntu-24.04-arm}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: release-linux-${{ matrix.arch }}
           path: dist/release
@@ -158,7 +164,7 @@ jobs:
       contents: write
     steps:
       - name: Gather the packages
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: release-*
           path: dist/release

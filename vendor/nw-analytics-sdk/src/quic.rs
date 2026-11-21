@@ -286,7 +286,7 @@ struct Receivers {
 impl Receivers {
     fn prune(&mut self) {
         self.allowed
-            .retain(|_, expiry| expiry.map_or(true, |expiry| expiry > std::time::Instant::now()));
+            .retain(|_, expiry| expiry.is_none_or(|expiry| expiry > std::time::Instant::now()));
         let allowed = &self.allowed;
         self.lanes
             .retain(|binding, _| allowed.contains_key(binding));
@@ -424,6 +424,9 @@ struct Lane {
     units: Option<mpsc::Sender<Chunk>>,
     waiting: bool,
     gap: bool,
+    /// Units given up on this binding (no room, or a newer GOP took the
+    /// place of an unfinished one): a link too slow for the stream.
+    lost: Arc<std::sync::atomic::AtomicU64>,
 }
 struct Output {
     formats: HashMap<u32, StreamFormat>,
@@ -559,6 +562,13 @@ impl QuicIo {
         })
     }
     pub fn connect(host: &str, port: u16) -> io::Result<Self> {
+        Self::connect_within(host, port, Duration::from_secs(10))
+    }
+
+    /// As [`Self::connect`], giving up on the handshake after `limit`: a
+    /// caller with another transport to try (TLS over TCP, where UDP is
+    /// blocked) need not wait the full 10 s.
+    pub fn connect_within(host: &str, port: u16, limit: Duration) -> io::Result<Self> {
         let remote = (host, port)
             .to_socket_addrs()?
             .next()
@@ -590,13 +600,11 @@ impl QuicIo {
         config.transport_config(Arc::new(transport()));
         endpoint.set_default_client_config(config);
         let (connection, send, recv) = runtime.block_on(async {
-            let connection = tokio::time::timeout(
-                Duration::from_secs(10),
-                endpoint.connect(remote, host).map_err(error)?,
-            )
-            .await
-            .map_err(error)?
-            .map_err(error)?;
+            let connection =
+                tokio::time::timeout(limit, endpoint.connect(remote, host).map_err(error)?)
+                    .await
+                    .map_err(error)?
+                    .map_err(error)?;
             let (send, recv) = connection.open_bi().await.map_err(error)?;
             Ok::<_, io::Error>((connection, send, recv))
         })?;
@@ -604,6 +612,10 @@ impl QuicIo {
     }
     pub fn peer_key(&self) -> Option<&str> {
         self.shared.peer_key.as_deref()
+    }
+    /// Who connected (their validated address).
+    pub fn peer(&self) -> crate::peer::Peer {
+        crate::peer::Peer::from_socket(self.shared.connection.remote_address())
     }
     pub fn channel_binding(&self) -> &str {
         &self.shared.binding
@@ -688,6 +700,7 @@ impl QuicIo {
                 units: None,
                 waiting: true,
                 gap: false,
+                lost: Arc::default(),
             }
         });
         if unit.keyframe() {
@@ -697,6 +710,8 @@ impl QuicIo {
             lane.waiting = false;
         }
         if lane.waiting {
+            // The rest of a GOP after a loss.
+            lane.lost.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             return Ok(());
         }
         // Acquire the byte budget before copying or starting another task.
@@ -704,6 +719,7 @@ impl QuicIo {
         let permit = match Arc::clone(&self.shared.budget).try_acquire_many_owned(size as u32) {
             Ok(permit) => permit,
             Err(_) => {
+                lane.lost.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 lane.waiting = true;
                 lane.gap = true;
                 lane.units = None;
@@ -729,6 +745,7 @@ impl QuicIo {
                 header,
                 rx,
                 lane.newest.subscribe(),
+                Arc::clone(&lane.lost),
             ));
         }
         let sent = lane.units.as_ref().is_some_and(|tx| {
@@ -740,12 +757,34 @@ impl QuicIo {
             .is_ok()
         });
         if !sent {
+            lane.lost.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             lane.waiting = true;
             lane.gap = true;
             lane.units = None;
         }
         Ok(())
     }
+
+    /// Units of `binding` given up so far because the link could not take
+    /// them; 0 for a binding never sent.
+    pub fn lost(&self, binding: u32) -> u64 {
+        self.shared.output.lock().map_or(0, |output| {
+            output.lanes.get(&binding).map_or(0, |lane| {
+                lane.lost.load(std::sync::atomic::Ordering::Relaxed)
+            })
+        })
+    }
+}
+
+/// A GOP abandoned: count what it held, and refuse what follows (counted by
+/// `media` as it is offered).
+fn abandon(units: &mut mpsc::Receiver<Chunk>, lost: &std::sync::atomic::AtomicU64, unsent: u64) {
+    units.close();
+    let mut count = unsent;
+    while units.try_recv().is_ok() {
+        count += 1;
+    }
+    lost.fetch_add(count, std::sync::atomic::Ordering::Relaxed);
 }
 
 async fn send_gop(
@@ -753,19 +792,23 @@ async fn send_gop(
     header: Gop,
     mut units: mpsc::Receiver<Chunk>,
     mut newest: watch::Receiver<u64>,
+    lost: Arc<std::sync::atomic::AtomicU64>,
 ) {
     let opened = tokio::time::timeout(
         Duration::from_millis(u64::from(header.max_buffer_ms.clamp(100, 10000))),
         connection.open_uni(),
     );
     let result = if header.delivery == DeliveryMode::Latest {
-        tokio::select! { result=opened=>result, _=newest.changed()=>return }
+        tokio::select! { result=opened=>result, _=newest.changed()=>{abandon(&mut units,&lost,0);return} }
     } else {
         opened.await
     };
     let mut stream = match result {
         Ok(Ok(stream)) => stream,
-        _ => return,
+        _ => {
+            abandon(&mut units, &lost, 0);
+            return;
+        }
     };
     let mut bytes = Vec::new();
     if frame::write_frame(
@@ -774,6 +817,7 @@ async fn send_gop(
     )
     .is_err()
     {
+        abandon(&mut units, &lost, 0);
         return;
     }
     let header_write = tokio::time::timeout(
@@ -781,12 +825,13 @@ async fn send_gop(
         stream.write_all(&bytes),
     );
     let written = if header.delivery == DeliveryMode::Latest {
-        tokio::select! {result=header_write=>result, _=newest.changed()=>{let _=stream.reset(1u32.into());return;}}
+        tokio::select! {result=header_write=>result, _=newest.changed()=>{let _=stream.reset(1u32.into());abandon(&mut units,&lost,0);return;}}
     } else {
         header_write.await
     };
     if !matches!(written, Ok(Ok(()))) {
         let _ = stream.reset(1u32.into());
+        abandon(&mut units, &lost, 0);
         return;
     }
     while let Some(chunk) = units.recv().await {
@@ -796,12 +841,13 @@ async fn send_gop(
             stream.write_all(&chunk.bytes),
         );
         let result = if header.delivery == DeliveryMode::Latest {
-            tokio::select! {result=write=>result, _=newest.changed()=>{let _=stream.reset(1u32.into());return;}}
+            tokio::select! {result=write=>result, _=newest.changed()=>{let _=stream.reset(1u32.into());abandon(&mut units,&lost,1);return;}}
         } else {
             write.await
         };
         if !matches!(result, Ok(Ok(()))) {
             let _ = stream.reset(1u32.into());
+            abandon(&mut units, &lost, 1);
             return;
         }
     }
@@ -852,9 +898,17 @@ impl Write for QuicIo {
         Ok(())
     }
 }
+/// Handshakes run at once; more are refused at once (vulnerability checklist
+/// R11: one silent peer used to hold up every recorder).
+const MAX_HANDSHAKES: usize = 32;
+/// Finished sessions waiting for `accept`.
+const READY: usize = 16;
+type Accepted = (Connection, SendStream, RecvStream);
 pub struct Listener {
     runtime: Arc<Runtime>,
     endpoint: Endpoint,
+    ready: tokio::sync::Mutex<mpsc::Receiver<Accepted>>,
+    task: tokio::task::JoinHandle<()>,
 }
 impl Listener {
     pub fn bind(address: SocketAddr, key: &SigningKey) -> io::Result<Self> {
@@ -863,40 +917,27 @@ impl Listener {
             let _guard = runtime.enter();
             Endpoint::server(server_config(key)?, address)?
         };
-        Ok(Self { runtime, endpoint })
+        let (tx, ready) = mpsc::channel(READY);
+        let task = runtime.spawn(accept_loop(endpoint.clone(), tx));
+        Ok(Self {
+            runtime,
+            endpoint,
+            ready: tokio::sync::Mutex::new(ready),
+            task,
+        })
     }
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
         self.endpoint.local_addr()
     }
+    /// The next connection whose handshake and control stream finished.
     pub fn accept(&self) -> io::Result<QuicIo> {
         let (connection, send, recv) = self.runtime.block_on(async {
-            loop {
-                let incoming = self
-                    .endpoint
-                    .accept()
-                    .await
-                    .ok_or_else(|| error("listener closed"))?;
-                if !incoming.remote_address_validated() {
-                    let _ = incoming.retry();
-                    continue;
-                }
-                let connection = match tokio::time::timeout(Duration::from_secs(10), incoming).await
-                {
-                    Ok(Ok(connection)) => connection,
-                    _ => continue,
-                };
-                let (send, recv) =
-                    match tokio::time::timeout(Duration::from_secs(10), connection.accept_bi())
-                        .await
-                    {
-                        Ok(Ok(streams)) => streams,
-                        _ => {
-                            connection.close(1u32.into(), b"control stream timeout");
-                            continue;
-                        }
-                    };
-                break Ok::<_, io::Error>((connection, send, recv));
-            }
+            self.ready
+                .lock()
+                .await
+                .recv()
+                .await
+                .ok_or_else(|| error("listener closed"))
         })?;
         QuicIo::new(
             Arc::clone(&self.runtime),
@@ -906,6 +947,40 @@ impl Listener {
             recv,
             true,
         )
+    }
+}
+impl Drop for Listener {
+    fn drop(&mut self) {
+        self.task.abort();
+    }
+}
+/// Hand each incoming connection to its own handshake task, up to
+/// [`MAX_HANDSHAKES`] at once, so a peer that stalls delays only itself.
+async fn accept_loop(endpoint: Endpoint, ready: mpsc::Sender<Accepted>) {
+    let slots = Arc::new(Semaphore::new(MAX_HANDSHAKES));
+    while let Some(incoming) = endpoint.accept().await {
+        if !incoming.remote_address_validated() {
+            let _ = incoming.retry();
+            continue;
+        }
+        let Ok(slot) = Arc::clone(&slots).try_acquire_owned() else {
+            incoming.refuse();
+            continue;
+        };
+        let ready = ready.clone();
+        tokio::spawn(async move {
+            let _slot = slot;
+            let Ok(Ok(connection)) = tokio::time::timeout(Duration::from_secs(10), incoming).await
+            else {
+                return;
+            };
+            match tokio::time::timeout(Duration::from_secs(10), connection.accept_bi()).await {
+                Ok(Ok((send, recv))) => {
+                    let _ = ready.send((connection, send, recv)).await;
+                }
+                _ => connection.close(1u32.into(), b"control stream timeout"),
+            }
+        });
     }
 }
 
@@ -948,6 +1023,31 @@ mod tests {
         ));
         (node, plugin)
     }
+    #[test]
+    fn a_silent_connection_does_not_hold_up_others() {
+        let key = SigningKey::from_bytes(&[15; 32]);
+        let listener = Listener::bind("127.0.0.1:0".parse().unwrap(), &key).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let io = listener.accept().unwrap();
+            let _ = tx.send(io);
+        });
+        // Connects, opens its control stream, says nothing.
+        let _silent = QuicIo::connect_within("127.0.0.1", port, Duration::from_secs(3)).unwrap();
+        let mut node = QuicIo::connect_within("127.0.0.1", port, Duration::from_secs(3)).unwrap();
+        frame::write_frame(
+            &mut node,
+            &Frame::Message(Message::request(1, method::PING, serde_json::json!({})).to_value()),
+        )
+        .unwrap();
+        let mut plugin = rx.recv_timeout(Duration::from_secs(4)).unwrap();
+        assert_eq!(
+            plugin.peer(),
+            crate::peer::Peer::Ip(std::net::Ipv4Addr::LOCALHOST.into())
+        );
+        assert!(frame::read_frame(&mut plugin).is_ok());
+    }
     fn unit(seq: u64, keyframe: bool, size: usize) -> MediaUnit {
         MediaUnit {
             binding: 1,
@@ -981,6 +1081,7 @@ mod tests {
             units.iter().map(|unit| unit.seq).collect::<Vec<_>>(),
             (1..=12).collect::<Vec<_>>()
         );
+        assert_eq!(node.lost(units[0].binding), 0, "nothing given up");
         for received in units {
             assert_eq!(received.data, vec![received.seq as u8; 128]);
         }
@@ -1015,6 +1116,11 @@ mod tests {
         assert!(gap);
         assert!(last.keyframe() && last.discontinuity());
         assert_eq!(last.data, vec![last.seq as u8; 128]);
+        // What was given up is counted, so the recorder can say the link is
+        // too slow (`plugin_lagging`), not only the plugin.
+        let lost = node.lost(last.binding);
+        assert!(lost > 0 && lost < 200, "lost {lost}");
+        assert_eq!(node.lost(last.binding + 1), 0);
         node.shutdown();
     }
 }

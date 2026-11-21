@@ -53,11 +53,18 @@ fn is_sdk(path: &Path) -> bool {
     path.join("lib").join("gstreamer-1.0").is_dir()
 }
 
+/// Folders above the binary that are searched: `target/release`, `target`, the
+/// plugin checkout and the folder beside `Neurowatch`. Not every ancestor: a
+/// `.cache` in some unrelated parent (a shared `/tmp`, say) must not supply
+/// the libraries this process loads.
+const SEARCH_DEPTH: usize = 4;
+
 /// The newest `.cache/gstreamer-sdk-<version>` of a NeuroWatch checkout: one this
 /// binary is inside, or the `Neurowatch` beside a plugin checkout that holds it.
 fn find(exe: &Path) -> Option<PathBuf> {
     exe.ancestors()
         .skip(1)
+        .take(SEARCH_DEPTH)
         .flat_map(|dir| [dir.join("Neurowatch"), dir.to_path_buf()])
         .find_map(|checkout| newest_sdk(&checkout.join(".cache")))
 }
@@ -155,6 +162,16 @@ mod tests {
             Choice::Use(tree.0.join("Neurowatch/.cache/gstreamer-sdk-1.28.10")),
             "by number: 1.28.10 is newer than 1.28.8 and 1.9.0"
         );
+    }
+
+    #[test]
+    fn a_distant_ancestor_is_not_searched() {
+        let tree = Tree::new("distant");
+        tree.sdk(".cache/gstreamer-sdk-1.28.8");
+        let exe = tree.0.join("a/b/c/d/e/nw-x");
+        assert_eq!(choose(&exe, None, None), Choice::Stay);
+        let near = tree.0.join("a/b/target/release/nw-x");
+        assert_eq!(choose(&near, None, None), Choice::Stay, "five levels up");
     }
 
     #[test]
