@@ -159,8 +159,21 @@ setting (Automatic, VA-API, NVIDIA NVDEC, Intel Quick Sync, V4L2 or CPU; Direct3
 names the decoder used. Automatic tries VA-API, NVDEC, Direct3D 11, then V4L2, as NeuroWatch
 does; a choice that cannot be used, or a hardware decoder with no picture after 10 s, moves on
 and ends on the CPU, with the reason in the camera's status. VA-API is refused on GStreamer
-1.24.0–1.24.5 (it leaks). `--hardware-decoding` is ignored. `--check` lists the hardware decoders
-found. Preserve the identity file across restarts. Unix
+1.24.0–1.24.5 (it leaks). A hardware decoder that worked but fails twice within 10 minutes (an error
+from the decoder itself, or no picture for 10 s while video arrives) is given up the same way; a
+stream restart or format change never counts against it. `--hardware-decoding` is ignored.
+**Scaling on the GPU:** a hardware decoder's picture is shrunk to the analysis size while it is
+still in GPU memory, and only the small picture is downloaded (VA-API: `vapostproc`; NVDEC:
+`cudaconvertscale` + `cudadownload`; Direct3D 11 / 12: `d3d11convert` / `d3d12convert` + the matching
+`…download`). Quick Sync, V4L2 and the older `vaapi*`/`msdk*` decoders, the CPU decoder and the
+pictures NeuroWatch already decoded (in system memory) scale on the CPU. The GPU scaler is optional
+and per camera: one that is not installed is never used, a video that is not larger than the
+analysis size is not sent through it, and one that fails to start, gives no picture in 10 s or keeps
+failing is dropped for that camera (until its Video decoder setting changes) while the same
+decoder carries on with CPU scaling. The camera's status says who decoded and who scaled, for
+example `VA-API (Intel, AMD) · scaled down on the GPU` or `CPU (software) · scaled down on the CPU`,
+with the reason (for example "Scaling on the CPU: vapostproc could not scale this video") in its
+detail. `--check` lists the hardware decoders and the GPU scalers found. Preserve the identity file across restarts. Unix
 socket directories are private (0700), sockets and secret files owner-only (0600); Windows uses
 local named pipes and DPAPI-protected keys. QUIC binds its TLS certificate to the same plugin key.
 The host must approve that key and permissions before sending media or credentials.
@@ -227,7 +240,18 @@ Plugins tab before it receives cameras. The included managed daemon is preapprov
 
 Open NeuroWatch's Plugins tab to bind cameras, select Main/Sub, tune sensitivity, minimum
 duration, cooldown, low CPU and watched/ignored zones. Live shows all drawing layers; Output
-lists actual events. The motion browser dashboard uses the host SDK's camera picker, live view,
+lists actual events.
+
+What counts as motion: a pixel has changed when its brightness differs from the learned scene by
+more than the **pixel change** (brightness levels of 255), a cell of the 16 × 9 grid has changed
+when a fifth of its pixels did, and there is motion when the changed cells reach the **moving
+area** (percent of the watched cells: the watched zones, or the whole picture). **Thresholds**
+chooses where those two come from: *From sensitivity* (the default; 28 − 2 × sensitivity levels and
+10% − 0.8% × sensitivity, so 18 levels and 6% at 5) or *Custom* (`thresholds_pixel_change`,
+2–100, and `thresholds_area_percent`, 0.5–50). A small or distant object changes only one or two
+cells, about 1% of a large watched area, which no sensitivity reaches: use Custom, or watch a
+smaller area. The analysis layer shows the score next to what it needs. Exclude a camera's
+on-screen clock with an ignored zone: it changes every second and counts as motion. The motion browser dashboard uses the host SDK's camera picker, live view,
 zone editor and event list. Plugin pages are authenticated and sandboxed by NeuroWatch.
 
 Two layers: `detections` shows the moving area/score (wall default); `debug` shows changed blocks,
@@ -235,11 +259,20 @@ zones and analysis metrics. Drawings expire after 1.5 seconds and clear on detac
 close when a session is lost; NeuroWatch reconnects with 2/5/10/30 second backoff.
 
 A verified local session can reuse existing stable desktop RGB/NV12 pictures at <=5 fps through
-a read-only capability ring. A suitable larger Main tile can supply pictures while compressed
-Sub is cached. All conversion/scaling happens here. The SDK resumes from the cached compressed
-GOP after one second without desktop pictures. Low-CPU mode always uses compressed keyframes
-and can miss short movement. Source switches reset detector background without ending a healthy
-open event unnecessarily.
+a read-only capability ring, of the bound stream only (the manifest asks for no minimum size):
+what is detected never depends on which stream a desktop shows. A camera shown on its own (its
+main stream) used to move the analysis to those main pictures, where the same object is smaller
+at 320x180 and the settings no longer fit, so the boxes stopped while the zones still showed.
+All conversion/scaling happens here. The SDK resumes from the cached compressed GOP after one
+second without desktop pictures. Low-CPU mode always uses compressed keyframes and can miss
+short movement. Source switches reset detector background without ending a healthy open event
+unnecessarily. A spot that has differed from the background for 5 seconds becomes background
+(`detector.rs` `STALE_MS`): something that stopped moving, or was in the first picture and then
+left, stops counting as motion instead of lingering for minutes and stretching every box to it.
+Each group of touching moving blocks gets its own box, fitted to the changed pixels in it rather than
+to the blocks, so it sits on the object rather than on the grid's lines. After every (re)start the
+background is the per-pixel median of the first second of pictures (nothing is reported meanwhile):
+learned from one picture, whatever was moving through it left a box behind for seconds.
 
 ## Develop
 
@@ -278,14 +311,14 @@ evaluation tool does not change the production detector or its build dependencie
 1. Set the new version in `Cargo.toml` and run `cargo build` (updates `Cargo.lock`).
 2. Pin `neurowatch.ref` to a public NeuroWatch commit containing the GStreamer build
    (`scripts/build_release_gstreamer.sh`). Analytics libraries come from this repo's `vendor/`.
-3. Push, wait for CI, then tag: `git tag v0.2.3 && git push origin v0.2.3`.
+3. Push, wait for CI, then tag: `git tag v0.3.0 && git push origin v0.3.0`.
 
 Pushing `main` or opening a pull request runs source checks and tests. Downloadable executables,
 installers and Linux packages are built and published **only when a version tag is pushed**
-(for example, `v0.2.3`). Normal branch pushes do not produce downloadable packages.
+(for example, `v0.3.0`). Normal branch pushes do not produce downloadable packages.
 
 To try the packaging without releasing, run the workflow by hand: **Actions → Release → Run
-workflow**, choose the branch and, if you like, enter a version such as `v0.2.3-rc.1` (left
+workflow**, choose the branch and, if you like, enter a version such as `v0.3.0-rc.1` (left
 empty, it is the one in `Cargo.toml`). It builds and checks every package exactly as a tag
 does and publishes nothing: the packages stay on the run's page as artifacts.
 
@@ -303,8 +336,8 @@ The [Windows workflow](.github/workflows/windows.yml) is called only by the rele
 on upgrade, and shutdown/shortcut removal on uninstall. Linux native packages include the
 automatically enabled user service; package smoke tests also check the default local socket.
 
-Locally: `scripts/package_linux.sh --version v0.2.3 --arch x86_64 --format portable,deb`
+Locally: `scripts/package_linux.sh --version v0.3.0 --arch x86_64 --format portable,deb`
 (builds NeuroWatch's GStreamer once into `build/gstreamer-sdk`; use a sibling checkout at the
 commit in `neurowatch.ref`, or set `NEUROWATCH_DIR`), and on Windows, from an MSVC
 developer shell with GStreamer's MSVC packages and Inno Setup 6,
-`scripts/package_windows.ps1 -Version v0.2.3` (use `-InnoSetupCompiler` for a custom compiler path).
+`scripts/package_windows.ps1 -Version v0.3.0` (use `-InnoSetupCompiler` for a custom compiler path).

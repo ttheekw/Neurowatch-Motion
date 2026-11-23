@@ -35,7 +35,8 @@ runtime compatibility, and tests on the supported hardware.
 
 Code inspection of `src/detector.rs` shows one brightness value per background
 pixel, one global sensitivity threshold, and a global reset whenever more than
-60% of the image changes. There is no multimodal background distribution, texture
+60% of the image changes (a pixel changed for 5 s also becomes background, `STALE_MS`, so
+what stopped moving or left the first picture does not linger). There is no multimodal background distribution, texture
 descriptor, explicit shadow model, connected-component analysis, or camera-motion
 estimation in the detector. The worker suppresses analysis when told the camera
 is moving, but that does not compensate for unannounced jitter or estimate

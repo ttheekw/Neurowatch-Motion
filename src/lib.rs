@@ -14,6 +14,7 @@ pub mod detector;
 pub mod drawing;
 pub mod gstreamer_runtime;
 pub mod manifest;
+pub mod scaling;
 pub mod server;
 pub mod settings;
 pub mod worker;

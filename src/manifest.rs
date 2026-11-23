@@ -42,8 +42,15 @@ pub fn manifest() -> Manifest {
                     nw_analytics_protocol::decoded::RawFormat::Rgb24,
                 ],
                 max_fps: 5,
-                min_width: 320,
-                min_height: 180,
+                // No minimum size: only the bound stream's own pictures. With
+                // one, NeuroWatch may hand over another of the camera's streams
+                // a desktop shows (its main stream in a solo tile), and what is
+                // detected would change with what someone looks at: on a main
+                // stream the same object is smaller after scaling to 320×180,
+                // the settings were made for the bound stream, and every switch
+                // starts the detection again.
+                min_width: 0,
+                min_height: 0,
             }),
             video: VideoRequest {
                 // 320×180 analysis: the sub stream is always enough.
@@ -89,7 +96,24 @@ fn config_schema() -> serde_json::Value {
         "properties": {
             "sensitivity": {"type": "integer", "minimum": 1, "maximum": 10, "default": 5,
                             "title": "Sensitivity",
-                            "description": "Higher notices smaller changes, and gives more false alarms from rain, shadows or leaves."},
+                            "description": "Higher notices smaller changes, and gives more false alarms from rain, shadows or leaves. It sets the two thresholds below unless Thresholds is Custom."},
+            // Keys sort right after "sensitivity" (the form follows key order).
+            "thresholds": {
+                "enum": ["sensitivity", "custom"], "default": "sensitivity",
+                "x-nw-labels": {"sensitivity": "From sensitivity", "custom": "Custom"},
+                "title": "Thresholds",
+                "description": "Motion is reported when enough of the watched area changes, and a pixel counts as changed when its brightness differs enough from the scene Motion has learned. From sensitivity: the sensitivity sets both (at 5: 6% of the area, 18 brightness levels; at 10: 2% and 8). Custom: the two values below are used instead, and the sensitivity is not."
+            },
+            "thresholds_area_percent": {
+                "type": "number", "minimum": 0.5, "maximum": 50, "default": 6,
+                "title": "Moving area, % (Custom)",
+                "description": "How much of the watched area must change before it counts as motion: your watched areas, or the whole picture without any. Motion divides the picture into a grid of 16 by 9 cells, and a cell counts as changed when a fifth of its pixels changed, so in a watched area of about 100 cells each cell is about 1%. A person far away, or a small animal, often changes only 1 or 2 cells: lower this to catch them, or watch a smaller area. Lower also means more false alarms. From sensitivity it is 10% minus 0.8% per sensitivity step (6% at 5, 2% at 10). The analysis layer shows the score next to what it needs."
+            },
+            "thresholds_pixel_change": {
+                "type": "integer", "minimum": 2, "maximum": 100, "default": 18,
+                "title": "Pixel change, brightness levels (Custom)",
+                "description": "How many brightness levels (of 255) a pixel must differ from the learned scene to count as changed. Lower notices faint or dark movement, and also more camera noise, rain and shadows. From sensitivity it is 28 minus 2 per sensitivity step (18 at 5, 8 at 10)."
+            },
             "cooldown_sec": {"type": "number", "minimum": 0, "maximum": 600, "default": 10,
                              "title": "Ends after quiet (seconds)",
                              "description": "An event ends once nothing has moved for this long. Shorter splits a long visit into several events."},
@@ -107,7 +131,7 @@ fn config_schema() -> serde_json::Value {
             "zones": {
                 "type": "array", "maxItems": 32, "x-nw-widget": "nw:zones",
                 "title": "Watched areas",
-                "description": "Areas to watch or to ignore. With no watched area, the whole picture is watched.",
+                "description": "Areas to watch or to ignore. With no watched area, the whole picture is watched. Ignore a camera's on-screen clock or name: a clock changes every second and counts as motion.",
                 "items": {
                     "type": "object", "required": ["id", "points"],
                     "properties": {
@@ -120,4 +144,66 @@ fn config_schema() -> serde_json::Value {
             }
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_thresholds_are_settings_explained_beside_the_sensitivity() {
+        // The user's choice (2026-11-23): the thresholds the sensitivity sets
+        // are settings of their own, described in the settings form.
+        let schema = config_schema();
+        let properties = schema["properties"].as_object().unwrap();
+        let keys: Vec<&String> = properties.keys().collect();
+        let at = keys.iter().position(|k| *k == "sensitivity").unwrap();
+        assert_eq!(
+            &keys[at..at + 4],
+            [
+                "sensitivity",
+                "thresholds",
+                "thresholds_area_percent",
+                "thresholds_pixel_change"
+            ],
+            "the form lists them together, in key order"
+        );
+        for key in [
+            "thresholds",
+            "thresholds_area_percent",
+            "thresholds_pixel_change",
+        ] {
+            let description = properties[key]["description"].as_str().unwrap();
+            assert!(
+                description.len() > 120,
+                "{key} explains itself: {description}"
+            );
+            assert!(
+                description.contains("sensitivity"),
+                "{key} says what the sensitivity sets"
+            );
+        }
+        let defaults = crate::settings::MotionSettings::default();
+        assert_eq!(properties["thresholds_area_percent"]["default"], 6);
+        assert_eq!(f64::from(defaults.thresholds_area_percent), 6.0);
+        assert_eq!(
+            properties["thresholds_pixel_change"]["default"],
+            defaults.thresholds_pixel_change
+        );
+        assert_eq!(defaults.pixel_threshold(), defaults.thresholds_pixel_change);
+        assert!((defaults.min_area() * 100.0 - defaults.thresholds_area_percent).abs() < 1e-4);
+    }
+
+    #[test]
+    fn the_analysis_stays_on_the_bound_stream_whatever_a_desktop_shows() {
+        // Reported: boxes on the sub stream's tile, none once the camera was
+        // shown on its own (main stream): NeuroWatch had moved this plugin to
+        // the desktop's main-stream pictures, which a minimum size allows.
+        let decoded = manifest()
+            .media
+            .decoded
+            .expect("uses NeuroWatch's pictures");
+        assert_eq!((decoded.min_width, decoded.min_height), (0, 0));
+        assert_eq!(manifest().media.video.stream, StreamChoice::Sub);
+    }
 }

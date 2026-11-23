@@ -202,7 +202,8 @@ fn a_moving_ball_is_reported_as_motion_and_ends_when_unbound() {
     );
     assert!(
         has(&seen, method::STATUS, &|p| running(p)
-            && p["bindings"][0]["decoder"] == "CPU (software)"),
+            && p["bindings"][0]["decoder"]
+                == "CPU (software) · scaled down on the CPU"),
         "the decoder chosen is the one used, and the status names it"
     );
     let detection = seen
@@ -484,7 +485,8 @@ fn local_desktop_pictures_prove_locality_and_keep_capture_identity() {
         .iter()
         .any(|(m, p)| m == method::OVERLAY && p["seq"].as_u64().is_some_and(|seq| seq >= first)));
     assert!(notices.iter().any(|(m, p)| m == method::STATUS
-        && p["bindings"][0]["decoder"] == "NeuroWatch's pictures (no decoding here)"));
+        && p["bindings"][0]["decoder"]
+            == "NeuroWatch's pictures (no decoding here) · scaled down on the CPU"));
     drop(ring);
     drop(probe);
     let _ = std::fs::remove_dir(dir);

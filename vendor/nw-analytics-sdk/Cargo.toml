@@ -1,7 +1,7 @@
 [package]
 name = "nw-analytics-sdk"
 description = "Transport and local picture sharing for NeuroWatch analytics daemons"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 authors = ["Neurowatch Contributors"]
 license = "Apache-2.0"

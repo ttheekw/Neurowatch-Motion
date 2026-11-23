@@ -173,6 +173,15 @@ fn check() -> anyhow::Result<()> {
     if let Some(reason) = nw_motion::worker::va_blocked() {
         println!("VA-API not used: {reason}");
     }
+    let scalers = nw_motion::worker::gpu_scalers();
+    println!(
+        "GPU scalers (optional): {}",
+        if scalers.is_empty() {
+            "none (the CPU scales)".to_owned()
+        } else {
+            scalers.join(", ")
+        }
+    );
     Ok(())
 }
 

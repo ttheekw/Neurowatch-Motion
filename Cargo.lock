@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "nw-analytics-protocol"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "serde",
  "serde_json",
@@ -731,7 +731,7 @@ dependencies = [
 
 [[package]]
 name = "nw-analytics-sdk"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "base64",
  "ed25519-dalek",
@@ -754,7 +754,7 @@ dependencies = [
 
 [[package]]
 name = "nw-motion"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "gstreamer",
@@ -773,7 +773,7 @@ dependencies = [
 
 [[package]]
 name = "nw-service-protocol"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "base64",
  "ed25519-dalek",

@@ -35,11 +35,27 @@ impl Zone {
     }
 }
 
+/// Where the two thresholds come from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Thresholds {
+    /// The sensitivity sets both (as before they were settings).
+    #[default]
+    Sensitivity,
+    /// `thresholds_area_percent` and `thresholds_pixel_change`.
+    Custom,
+}
+
 /// Fields left out take their defaults, so a client may send only what it sets.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct MotionSettings {
     pub sensitivity: u8,
+    pub thresholds: Thresholds,
+    /// Custom: the share of the watched area that must change, in percent.
+    pub thresholds_area_percent: f32,
+    /// Custom: how many brightness levels a pixel must differ from the scene.
+    pub thresholds_pixel_change: u8,
     pub cooldown_sec: f32,
     pub min_duration_sec: f32,
     /// Decode independently decodable pictures only. Short movements between
@@ -58,11 +74,34 @@ impl Default for MotionSettings {
     fn default() -> Self {
         Self {
             sensitivity: 5,
+            thresholds: Thresholds::Sensitivity,
+            // What sensitivity 5 sets.
+            thresholds_area_percent: 6.0,
+            thresholds_pixel_change: 18,
             cooldown_sec: 10.0,
             min_duration_sec: 0.5,
             low_cpu: false,
             decoder: crate::decoding::DecoderChoice::default(),
             zones: vec![],
+        }
+    }
+}
+
+impl MotionSettings {
+    /// A pixel more than this many brightness levels from the learned scene
+    /// has changed.
+    pub fn pixel_threshold(&self) -> u8 {
+        match self.thresholds {
+            Thresholds::Sensitivity => 28 - self.sensitivity.clamp(1, 10) * 2,
+            Thresholds::Custom => self.thresholds_pixel_change.clamp(2, 100),
+        }
+    }
+
+    /// The share of the watched blocks (0..1) that must change for motion.
+    pub fn min_area(&self) -> f32 {
+        match self.thresholds {
+            Thresholds::Sensitivity => 0.10 - f32::from(self.sensitivity.clamp(1, 10)) * 0.008,
+            Thresholds::Custom => self.thresholds_area_percent.clamp(0.5, 50.0) / 100.0,
         }
     }
 }
@@ -94,6 +133,12 @@ pub fn validate(value: &serde_json::Value) -> Result<MotionSettings, String> {
         || !(0.0..=60.0).contains(&settings.min_duration_sec)
     {
         return Err("Motion sensitivity must be 1–10, cooldown 0–600 seconds and minimum duration 0–60 seconds".into());
+    }
+    if !settings.thresholds_area_percent.is_finite()
+        || !(0.5..=50.0).contains(&settings.thresholds_area_percent)
+        || !(2..=100).contains(&settings.thresholds_pixel_change)
+    {
+        return Err("The moving area must be 0.5–50% and the pixel change 2–100 levels".into());
     }
     if let Some(raw) = value.get("zones").or_else(|| value.get("exclusion_zones")) {
         let zones: Vec<Zone> =
@@ -153,6 +198,32 @@ mod tests {
         assert_eq!(settings.zones.len(), 1);
         assert_eq!(settings.zones[0].id, "a");
         assert_eq!(settings.sensitivity, 5);
+    }
+
+    #[test]
+    fn the_thresholds_follow_the_sensitivity_unless_custom() {
+        // What sensitivity sets (and set before the thresholds were settings).
+        let five = validate(&json!({})).unwrap();
+        assert_eq!(five.thresholds, Thresholds::Sensitivity);
+        assert_eq!(five.pixel_threshold(), 18);
+        assert!((five.min_area() - 0.06).abs() < 1e-6);
+        let ten = validate(&json!({"sensitivity": 10, "thresholds_area_percent": 1.0})).unwrap();
+        assert_eq!(ten.pixel_threshold(), 8);
+        assert!(
+            (ten.min_area() - 0.02).abs() < 1e-6,
+            "custom values unused until chosen"
+        );
+        // Custom: the two values, whatever the sensitivity.
+        let custom = validate(&json!({"sensitivity": 6, "thresholds": "custom",
+                                      "thresholds_area_percent": 1.0, "thresholds_pixel_change": 12}))
+        .unwrap();
+        assert_eq!(custom.pixel_threshold(), 12);
+        assert!((custom.min_area() - 0.01).abs() < 1e-6);
+        assert!(validate(&json!({"thresholds": "magic"})).is_err());
+        assert!(validate(&json!({"thresholds_area_percent": 0.1})).is_err());
+        assert!(validate(&json!({"thresholds_area_percent": 51.0})).is_err());
+        assert!(validate(&json!({"thresholds_pixel_change": 1})).is_err());
+        assert!(validate(&json!({"thresholds_pixel_change": 101})).is_err());
     }
 
     #[test]

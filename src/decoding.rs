@@ -224,6 +224,50 @@ pub fn va_leaks(version: &str) -> bool {
     }
 }
 
+/// A running hardware decoder (or scaler) that fails this many times within
+/// [`RUNNING_WINDOW`] is given up for the camera: it worked once, so the first
+/// failure is a retry, the second a pattern.
+pub const RUNNING_FAILURES: usize = 2;
+pub const RUNNING_WINDOW: std::time::Duration = std::time::Duration::from_secs(600);
+
+/// Failures of components that had produced pictures, to tell a hiccup from
+/// one that keeps coming back. Only what the component itself got wrong goes
+/// in: never a format change, a restarted stream or lost input.
+#[derive(Debug, Default)]
+pub struct RunningFailures {
+    seen: Vec<(&'static str, std::time::Instant)>,
+}
+
+impl RunningFailures {
+    /// Note a failure of `culprit` at `at`; true when it is now to be given up
+    /// (its failures are forgotten then).
+    pub fn note(&mut self, culprit: &'static str, at: std::time::Instant) -> bool {
+        self.seen
+            .retain(|(_, then)| at.saturating_duration_since(*then) < RUNNING_WINDOW);
+        self.seen.push((culprit, at));
+        let count = self.seen.iter().filter(|(who, _)| *who == culprit).count();
+        if count >= RUNNING_FAILURES {
+            self.seen.retain(|(who, _)| *who != culprit);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.seen.clear();
+    }
+}
+
+/// Why a decoder that worked was given up: "on the CPU: VA-API kept failing
+/// while running" when the CPU takes over, else without the prefix (the next
+/// hardware decoder).
+pub fn gave_up_note(element: &str, to_cpu: bool) -> String {
+    let name = DecoderChoice::of_element(element).map_or(element, |choice| choice.label());
+    let prefix = if to_cpu { "on the CPU: " } else { "" };
+    format!("{prefix}{name} kept failing while running")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -370,5 +414,48 @@ mod tests {
             );
         }
         assert_eq!(DecoderChoice::default(), DecoderChoice::Auto);
+    }
+
+    #[test]
+    fn a_decoder_that_keeps_failing_while_running_is_given_up() {
+        use std::time::{Duration, Instant};
+        let start = Instant::now();
+        let at = |secs| start + Duration::from_secs(secs);
+        let mut log = RunningFailures::default();
+        assert!(!log.note("vah264dec", at(0)), "once is a retry");
+        assert!(log.note("vah264dec", at(300)), "twice within 10 minutes");
+        assert!(!log.note("vah264dec", at(301)), "forgotten after giving up");
+        // Too far apart.
+        let mut log = RunningFailures::default();
+        assert!(!log.note("vah264dec", at(0)));
+        assert!(!log.note("vah264dec", at(601)), "10 minutes passed");
+        assert!(
+            log.note("vah264dec", at(1100)),
+            "the 601 s one is within 600 s"
+        );
+        // Another component's failure is not this one's.
+        let mut log = RunningFailures::default();
+        assert!(!log.note("vah264dec", at(0)));
+        assert!(!log.note("vapostproc", at(1)));
+        assert!(log.note("vapostproc", at(2)));
+        assert!(log.note("vah264dec", at(3)));
+        log.clear();
+        assert!(!log.note("vah264dec", at(4)));
+    }
+
+    #[test]
+    fn the_note_for_a_decoder_given_up_names_it_as_people_do() {
+        assert_eq!(
+            gave_up_note("vah264dec", true),
+            "on the CPU: VA-API kept failing while running"
+        );
+        assert_eq!(
+            status_text("avdec_h264", Some(&gave_up_note("vah264dec", true))),
+            "CPU (software): VA-API kept failing while running"
+        );
+        assert_eq!(
+            gave_up_note("nvh265dec", false),
+            "NVDEC kept failing while running"
+        );
     }
 }

@@ -45,8 +45,11 @@ impl Activity {
         }
         if self.open {
             self.peak = self.peak.max(sample.score);
-            if let Some(bbox) = sample.bbox {
-                self.bbox = Some(union_bbox(self.bbox, bbox));
+            // The event's box is where it started: the largest moving area on
+            // its first picture (near its thumbnail's moment). Widened over the
+            // event it grew to cover everything that moved for its whole life.
+            if self.bbox.is_none() {
+                self.bbox = sample.boxes.first().copied().or(sample.bbox);
             }
             self.zones.extend(sample.zones.iter().cloned());
             if !sample.active {
@@ -82,20 +85,6 @@ impl Activity {
     }
 }
 
-fn union_bbox(previous: Option<[f32; 4]>, next: [f32; 4]) -> [f32; 4] {
-    let Some(old) = previous else {
-        return next;
-    };
-    let x = old[0].min(next[0]);
-    let y = old[1].min(next[1]);
-    [
-        x,
-        y,
-        (old[0] + old[2]).max(next[0] + next[2]) - x,
-        (old[1] + old[3]).max(next[1] + next[3]) - y,
-    ]
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,6 +94,7 @@ mod tests {
             active,
             score,
             bbox,
+            boxes: bbox.into_iter().collect(),
             zones: zones.iter().map(|z| z.to_string()).collect(),
             blocks: vec![],
         }
@@ -148,9 +138,9 @@ mod tests {
             panic!("expected one update, got {update:?}");
         };
         assert_eq!(*peak, 0.5);
-        let [x, y, w, h] = bbox.unwrap();
-        assert!((x - 0.1).abs() < 1e-6 && (y - 0.1).abs() < 1e-6);
-        assert!((w - 0.5).abs() < 1e-6 && (h - 0.5).abs() < 1e-6);
+        // The event's box stays where it started (its thumbnail's moment); it
+        // no longer widens to every later moving area (2026-11-23).
+        assert_eq!(*bbox, Some([0.1, 0.1, 0.2, 0.2]));
         assert_eq!(zones, &["door", "yard"]);
     }
 

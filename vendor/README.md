@@ -2,9 +2,9 @@
 
 `nw-analytics-protocol`, `nw-analytics-sdk` and `nw-service-protocol` contain the
 library sources needed to build this daemon without a NeuroWatch checkout. They are
-copies of NeuroWatch's crates of the same names at NeuroWatch v0.1.10:
-commit `eeddef965d6a486be14151b79d9e34680d04f514`
-(https://github.com/ttheekw/Neurowatch/tree/eeddef965d6a486be14151b79d9e34680d04f514/crates).
+copies of NeuroWatch's crates of the same names at NeuroWatch v0.1.11:
+commit `be042cddc95c0e3c17d96550c1c51017835d5609`
+(https://github.com/ttheekw/Neurowatch/tree/be042cddc95c0e3c17d96550c1c51017835d5609/crates).
 They use NeuroWatch's Apache-2.0 license.
 
 Only each crate's `Cargo.toml`, library `src/` files and the files those sources embed
